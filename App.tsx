@@ -7,7 +7,7 @@ import { ChecklistModal } from './components/ChecklistModal';
 import { Dashboard } from './components/Dashboard';
 import { AdminPanel } from './components/AdminPanel';
 import { openWhatsApp } from './utils/whatsapp';
-import { supabase } from './lib/supabase';
+import { supabase, isSupabaseConfigured } from './lib/supabase';
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -21,6 +21,11 @@ const App: React.FC = () => {
   const [criticalError, setCriticalError] = useState<string | null>(null);
 
   const loadTasks = async () => {
+    if (!isSupabaseConfigured) {
+      setLoading(false);
+      return;
+    }
+    
     try {
       const { data, error } = await supabase
         .from('tasks')
@@ -31,12 +36,18 @@ const App: React.FC = () => {
       setTasks(data || []);
     } catch (error: any) {
       console.error('Erro ao carregar tarefas:', error);
+      // Não bloqueia o app, apenas registra o erro
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
+    if (!isSupabaseConfigured) {
+      setLoading(false);
+      return;
+    }
+
     try {
       loadTasks();
       const channel = supabase
@@ -45,7 +56,7 @@ const App: React.FC = () => {
         .subscribe();
       return () => { supabase.removeChannel(channel); };
     } catch (err: any) {
-      setCriticalError(err.message);
+      console.error('Erro no Realtime:', err);
     }
   }, []);
 
@@ -115,13 +126,26 @@ const App: React.FC = () => {
     }
   };
 
-  if (criticalError) {
+  // Se o Supabase não estiver configurado, mostra tela de erro explicativa
+  if (!isSupabaseConfigured) {
     return (
-      <div className="min-h-screen bg-red-900 flex items-center justify-center p-6 text-white text-center">
-        <div>
-          <h1 className="text-3xl font-black mb-4">Erro de Inicialização</h1>
-          <p className="opacity-70 mb-8">{criticalError}</p>
-          <button onClick={() => window.location.reload()} className="bg-white text-red-900 px-8 py-3 rounded-xl font-bold">Tentar Novamente</button>
+      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-8 text-white text-center">
+        <div className="w-20 h-20 bg-amber-500 rounded-full flex items-center justify-center mb-6 animate-bounce">
+          <span className="text-4xl">⚠️</span>
+        </div>
+        <h1 className="text-2xl font-black mb-4">Configuração Necessária</h1>
+        <p className="text-slate-400 mb-8 max-w-md">
+          O sistema foi carregado, mas as chaves do banco de dados (Supabase) não foram encontradas nas variáveis de ambiente.
+        </p>
+        <div className="bg-slate-800 p-6 rounded-2xl text-left w-full max-w-md border border-slate-700">
+          <p className="text-xs font-bold text-indigo-400 uppercase mb-4">Como resolver:</p>
+          <ol className="text-sm space-y-3 text-slate-300">
+            <li>1. Vá no painel da Vercel</li>
+            <li>2. Settings > Environment Variables</li>
+            <li>3. Adicione <b>VITE_SUPABASE_URL</b></li>
+            <li>4. Adicione <b>VITE_SUPABASE_ANON_KEY</b></li>
+            <li>5. Faça um novo Deploy (Redeploy)</li>
+          </ol>
         </div>
       </div>
     );
@@ -176,30 +200,39 @@ const App: React.FC = () => {
       </header>
 
       <main className="max-w-2xl mx-auto p-4 space-y-6">
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
-            <p className="text-[10px] font-black text-slate-400 uppercase">Status Global</p>
-            <p className="text-3xl font-black text-indigo-600">{completedToday} ✅</p>
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20">
+            <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+            <p className="text-slate-400 font-bold">Carregando tarefas...</p>
           </div>
-          <div className="bg-indigo-600 p-4 rounded-2xl shadow-lg shadow-indigo-100 text-white cursor-pointer active:scale-95 transition-transform" onClick={() => setView('dashboard')}>
-            <p className="text-[10px] font-black opacity-60 uppercase">Métricas</p>
-            <p className="text-xl font-black">Dashboard 📈</p>
-          </div>
-        </div>
-
-        <div>
-          <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-4">Tarefas</h2>
-          <div className="space-y-1">
-            {myTasks.filter(t => t.status !== 'concluido').map(task => (
-              <TaskCard key={task.id} task={task} onStart={handleStartTask} onFinish={() => { setActiveTask(task); setShowChecklist(true); }} currentUser={currentUser.name} />
-            ))}
-            {myTasks.filter(t => t.status !== 'concluido').length === 0 && (
-              <div className="text-center py-12 bg-white rounded-3xl border-2 border-dashed border-slate-200">
-                 <p className="text-slate-400 font-bold">Sem tarefas pendentes! 🎉</p>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+                <p className="text-[10px] font-black text-slate-400 uppercase">Status Global</p>
+                <p className="text-3xl font-black text-indigo-600">{completedToday} ✅</p>
               </div>
-            )}
-          </div>
-        </div>
+              <div className="bg-indigo-600 p-4 rounded-2xl shadow-lg shadow-indigo-100 text-white cursor-pointer active:scale-95 transition-transform" onClick={() => setView('dashboard')}>
+                <p className="text-[10px] font-black opacity-60 uppercase">Métricas</p>
+                <p className="text-xl font-black">Dashboard 📈</p>
+              </div>
+            </div>
+
+            <div>
+              <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-4">Minhas Tarefas</h2>
+              <div className="space-y-1">
+                {myTasks.filter(t => t.status !== 'concluido').map(task => (
+                  <TaskCard key={task.id} task={task} onStart={handleStartTask} onFinish={() => { setActiveTask(task); setShowChecklist(true); }} currentUser={currentUser.name} />
+                ))}
+                {myTasks.filter(t => t.status !== 'concluido').length === 0 && (
+                  <div className="text-center py-12 bg-white rounded-3xl border-2 border-dashed border-slate-200">
+                     <p className="text-slate-400 font-bold">Sem tarefas pendentes! 🎉</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        )}
       </main>
 
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 p-4 flex justify-around items-center z-40 pb-8">
