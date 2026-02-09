@@ -18,6 +18,7 @@ const App: React.FC = () => {
   const [showAdmin, setShowAdmin] = useState(false);
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [loading, setLoading] = useState(true);
+  const [criticalError, setCriticalError] = useState<string | null>(null);
 
   const loadTasks = async () => {
     try {
@@ -36,12 +37,16 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
-    loadTasks();
-    const channel = supabase
-      .channel('tasks_channel')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => loadTasks())
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    try {
+      loadTasks();
+      const channel = supabase
+        .channel('tasks_channel')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => loadTasks())
+        .subscribe();
+      return () => { supabase.removeChannel(channel); };
+    } catch (err: any) {
+      setCriticalError(err.message);
+    }
   }, []);
 
   const handleLogin = () => {
@@ -96,7 +101,7 @@ const App: React.FC = () => {
         name,
         type,
         employee: employee || null,
-        assigned_by: currentUser.name, // Rastreando quem criou
+        assigned_by: currentUser.name,
         notes,
         status: 'pendente',
         checklist: {}
@@ -109,6 +114,18 @@ const App: React.FC = () => {
       setShowAdmin(false);
     }
   };
+
+  if (criticalError) {
+    return (
+      <div className="min-h-screen bg-red-900 flex items-center justify-center p-6 text-white text-center">
+        <div>
+          <h1 className="text-3xl font-black mb-4">Erro de Inicialização</h1>
+          <p className="opacity-70 mb-8">{criticalError}</p>
+          <button onClick={() => window.location.reload()} className="bg-white text-red-900 px-8 py-3 rounded-xl font-bold">Tentar Novamente</button>
+        </div>
+      </div>
+    );
+  }
 
   if (!currentUser) {
     return (
@@ -164,7 +181,7 @@ const App: React.FC = () => {
             <p className="text-[10px] font-black text-slate-400 uppercase">Status Global</p>
             <p className="text-3xl font-black text-indigo-600">{completedToday} ✅</p>
           </div>
-          <div className="bg-indigo-600 p-4 rounded-2xl shadow-lg shadow-indigo-100 text-white" onClick={() => setView('dashboard')}>
+          <div className="bg-indigo-600 p-4 rounded-2xl shadow-lg shadow-indigo-100 text-white cursor-pointer active:scale-95 transition-transform" onClick={() => setView('dashboard')}>
             <p className="text-[10px] font-black opacity-60 uppercase">Métricas</p>
             <p className="text-xl font-black">Dashboard 📈</p>
           </div>
@@ -188,7 +205,7 @@ const App: React.FC = () => {
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 p-4 flex justify-around items-center z-40 pb-8">
         <button onClick={() => setView('home')} className={`p-2 ${view === 'home' ? 'text-indigo-600' : 'text-slate-400'}`}>🏠</button>
         {isAdminOrManager && (
-          <button onClick={() => setShowAdmin(true)} className="w-14 h-14 bg-indigo-600 text-white rounded-2xl shadow-lg flex items-center justify-center -translate-y-4">➕</button>
+          <button onClick={() => setShowAdmin(true)} className="w-14 h-14 bg-indigo-600 text-white rounded-2xl shadow-lg flex items-center justify-center -translate-y-4 active:scale-90 transition-transform">➕</button>
         )}
         <button onClick={() => setView('dashboard')} className={`p-2 ${view === 'dashboard' ? 'text-indigo-600' : 'text-slate-400'}`}>📊</button>
       </nav>

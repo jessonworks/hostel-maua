@@ -1,33 +1,29 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-// No Vite, usamos import.meta.env em vez de process.env
-// O Vite só expõe variáveis que começam com VITE_ por padrão.
-// Tentamos ler ambos para garantir compatibilidade com o que você já configurou na Vercel.
+// Environment variables must be accessed via process.env in this environment.
+// This change fixes the TypeScript error where import.meta.env was not recognized.
 
-const getEnv = (name: string) => {
-  try {
-    // @ts-ignore - Fallback para diferentes ambientes de build
-    return import.meta.env[name] || import.meta.env[`VITE_${name.replace('NEXT_PUBLIC_', '')}`] || "";
-  } catch (e) {
-    return "";
-  }
-};
+const supabaseUrl = process.env.VITE_SUPABASE_URL || 
+                    process.env.NEXT_PUBLIC_SUPABASE_URL || 
+                    '';
 
-const supabaseUrl = getEnv('NEXT_PUBLIC_SUPABASE_URL');
-const supabaseAnonKey = getEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY');
+const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || 
+                        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 
+                        '';
 
-if (!supabaseUrl || !supabaseAnonKey || supabaseUrl.includes('placeholder')) {
+if (!supabaseUrl || !supabaseAnonKey) {
   console.warn(
-    '⚠️ CONFIGURAÇÃO NECESSÁRIA:\n' +
-    'As chaves do Supabase não foram detectadas corretamente.\n' +
-    'Na Vercel, certifique-se de que as chaves comecem com VITE_:\n' +
+    '⚠️ CONFIGURAÇÃO DO SUPABASE AUSENTE:\n' +
+    'As variáveis de ambiente não foram detectadas.\n' +
+    'Certifique-se de adicioná-las no ambiente:\n' +
     '1. VITE_SUPABASE_URL\n' +
     '2. VITE_SUPABASE_ANON_KEY'
   );
 }
 
+// Inicializa o cliente com fallback para evitar erro fatal imediato
 export const supabase = createClient(
-  supabaseUrl || 'https://placeholder.supabase.co', 
+  supabaseUrl || 'https://placeholder.supabase.co',
   supabaseAnonKey || 'placeholder-key'
 );
