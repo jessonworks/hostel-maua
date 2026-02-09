@@ -1,15 +1,29 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-// No ambiente de produção (Vercel), estas variáveis devem ser configuradas.
-// Caso contrário, o console avisará o desenvolvedor.
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+// No Vite, usamos import.meta.env em vez de process.env
+// O Vite só expõe variáveis que começam com VITE_ por padrão.
+// Tentamos ler ambos para garantir compatibilidade com o que você já configurou na Vercel.
 
-if (!supabaseUrl || !supabaseAnonKey) {
+const getEnv = (name: string) => {
+  try {
+    // @ts-ignore - Fallback para diferentes ambientes de build
+    return import.meta.env[name] || import.meta.env[`VITE_${name.replace('NEXT_PUBLIC_', '')}`] || "";
+  } catch (e) {
+    return "";
+  }
+};
+
+const supabaseUrl = getEnv('NEXT_PUBLIC_SUPABASE_URL');
+const supabaseAnonKey = getEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY');
+
+if (!supabaseUrl || !supabaseAnonKey || supabaseUrl.includes('placeholder')) {
   console.warn(
-    '⚠️ ATENÇÃO: Chaves do Supabase não encontradas. Verifique as Variáveis de Ambiente no Vercel/Local.\n' +
-    'O sistema não conseguirá salvar dados até que NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY sejam configuradas.'
+    '⚠️ CONFIGURAÇÃO NECESSÁRIA:\n' +
+    'As chaves do Supabase não foram detectadas corretamente.\n' +
+    'Na Vercel, certifique-se de que as chaves comecem com VITE_:\n' +
+    '1. VITE_SUPABASE_URL\n' +
+    '2. VITE_SUPABASE_ANON_KEY'
   );
 }
 
