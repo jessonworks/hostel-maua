@@ -40,13 +40,11 @@
 <script type="importmap">
 {
   "imports": {
-    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.45.0",
-    "react": "https://esm.sh/react@18.3.1",
-    "react/": "https://esm.sh/react@18.3.1/",
-    "react-dom": "https://esm.sh/react-dom@18.3.1",
-    "react-dom/": "https://esm.sh/react-dom@18.3.1/",
-    "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
-    "recharts": "https://esm.sh/recharts@2.12.7?external=react,react-dom"
+    "react": "https://esm.sh/react@^19.2.4",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
+    "react/": "https://esm.sh/react@^19.2.4/",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.95.3",
+    "recharts": "https://esm.sh/recharts@^3.7.0"
   }
 }
 </script>
@@ -54,10 +52,12 @@
 <body>
     <div id="root"></div>
     <div id="error-overlay">
-        <h1 style="font-size: 2rem; margin-bottom: 1rem;">⚠️ Erro de Carregamento</h1>
-        <p id="error-message" style="color: #94a3b8; max-width: 500px; font-family: monospace;"></p>
-        <button onclick="location.reload()" style="margin-top: 2rem; padding: 1rem 2rem; background: #4f46e5; border: none; color: white; border-radius: 0.75rem; font-weight: bold; cursor: pointer;">Tentar Novamente</button>
+        <div style="background: #1e293b; padding: 2rem; border-radius: 1.5rem; border: 1px solid #334155; max-width: 90%;">
+            <h1 style="font-size: 1.5rem; font-weight: 800; margin-bottom: 1rem; color: #f43f5e;">⚠️ Erro na Aplicação</h1>
+            <p id="error-message" style="color: #94a3b8; font-family: monospace; font-size: 0.875rem; word-break: break-all;"></p>
+            <button onclick="location.reload()" style="margin-top: 2rem; width: 100%; padding: 1rem; background: #4f46e5; border: none; color: white; border-radius: 0.75rem; font-weight: bold; cursor: pointer;">Recarregar Sistema</button>
+        </div>
     </div>
-    <script type="module" src="./index.tsx"></script>
+    <script type="module" src="/index.tsx"></script>
 </body>
 </html>

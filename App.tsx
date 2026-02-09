@@ -1,13 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
-import { Task, User, TaskStatus, TaskType } from './types';
-import { EMPLOYEES } from './constants';
-import { TaskCard } from './components/TaskCard';
-import { ChecklistModal } from './components/ChecklistModal';
-import { Dashboard } from './components/Dashboard';
-import { AdminPanel } from './components/AdminPanel';
-import { openWhatsApp } from './utils/whatsapp';
-import { supabase, isSupabaseConfigured } from './lib/supabase';
+import { Task, User, TaskStatus, TaskType } from './types.ts';
+import { EMPLOYEES } from './constants.ts';
+import { TaskCard } from './components/TaskCard.tsx';
+import { ChecklistModal } from './components/ChecklistModal.tsx';
+import { Dashboard } from './components/Dashboard.tsx';
+import { AdminPanel } from './components/AdminPanel.tsx';
+import { openWhatsApp } from './utils/whatsapp.ts';
+import { supabase, isSupabaseConfigured } from './lib/supabase.ts';
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -18,7 +18,6 @@ const App: React.FC = () => {
   const [showAdmin, setShowAdmin] = useState(false);
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [loading, setLoading] = useState(true);
-  const [criticalError, setCriticalError] = useState<string | null>(null);
 
   const loadTasks = async () => {
     if (!isSupabaseConfigured) {
@@ -36,7 +35,6 @@ const App: React.FC = () => {
       setTasks(data || []);
     } catch (error: any) {
       console.error('Erro ao carregar tarefas:', error);
-      // Não bloqueia o app, apenas registra o erro
     } finally {
       setLoading(false);
     }
@@ -48,16 +46,12 @@ const App: React.FC = () => {
       return;
     }
 
-    try {
-      loadTasks();
-      const channel = supabase
-        .channel('tasks_channel')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => loadTasks())
-        .subscribe();
-      return () => { supabase.removeChannel(channel); };
-    } catch (err: any) {
-      console.error('Erro no Realtime:', err);
-    }
+    loadTasks();
+    const channel = supabase
+      .channel('tasks_channel')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => loadTasks())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
   const handleLogin = () => {
@@ -126,7 +120,6 @@ const App: React.FC = () => {
     }
   };
 
-  // Se o Supabase não estiver configurado, mostra tela de erro explicativa
   if (!isSupabaseConfigured) {
     return (
       <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-8 text-white text-center">
@@ -135,16 +128,15 @@ const App: React.FC = () => {
         </div>
         <h1 className="text-2xl font-black mb-4">Configuração Necessária</h1>
         <p className="text-slate-400 mb-8 max-w-md">
-          O sistema foi carregado, mas as chaves do banco de dados (Supabase) não foram encontradas nas variáveis de ambiente.
+          O sistema foi carregado, mas as chaves do Supabase não foram encontradas.
         </p>
         <div className="bg-slate-800 p-6 rounded-2xl text-left w-full max-w-md border border-slate-700">
-          <p className="text-xs font-bold text-indigo-400 uppercase mb-4">Como resolver:</p>
+          <p className="text-xs font-bold text-indigo-400 uppercase mb-4">Ação necessária no Vercel:</p>
           <ol className="text-sm space-y-3 text-slate-300">
-            <li>1. Vá no painel da Vercel</li>
-            <li>2. Settings > Environment Variables</li>
-            <li>3. Adicione <b>VITE_SUPABASE_URL</b></li>
-            <li>4. Adicione <b>VITE_SUPABASE_ANON_KEY</b></li>
-            <li>5. Faça um novo Deploy (Redeploy)</li>
+            <li>1. Vá em <b>Settings > Environment Variables</b></li>
+            <li>2. Adicione <b>VITE_SUPABASE_URL</b></li>
+            <li>3. Adicione <b>VITE_SUPABASE_ANON_KEY</b></li>
+            <li>4. Realize um novo <b>Deploy</b></li>
           </ol>
         </div>
       </div>
@@ -182,10 +174,10 @@ const App: React.FC = () => {
     return <Dashboard tasks={tasks} onBack={() => setView('home')} userRole={currentUser.role} currentUser={currentUser.name} />;
   }
 
-  const today = new Date().toISOString().split('T')[0];
+  const todayStr = new Date().toISOString().split('T')[0];
   const isAdminOrManager = currentUser.role === 'gerente' || currentUser.role === 'criador';
   const myTasks = tasks.filter(t => t.employee === currentUser.name || (!t.employee && isAdminOrManager));
-  const completedToday = tasks.filter(t => t.status === 'concluido' && t.completed_at?.startsWith(today)).length;
+  const completedTodayCount = tasks.filter(t => t.status === 'concluido' && t.completed_at?.startsWith(todayStr)).length;
 
   return (
     <div className="min-h-screen pb-32">
@@ -203,14 +195,14 @@ const App: React.FC = () => {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20">
             <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-            <p className="text-slate-400 font-bold">Carregando tarefas...</p>
+            <p className="text-slate-400 font-bold">Sincronizando...</p>
           </div>
         ) : (
           <>
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
                 <p className="text-[10px] font-black text-slate-400 uppercase">Status Global</p>
-                <p className="text-3xl font-black text-indigo-600">{completedToday} ✅</p>
+                <p className="text-3xl font-black text-indigo-600">{completedTodayCount} ✅</p>
               </div>
               <div className="bg-indigo-600 p-4 rounded-2xl shadow-lg shadow-indigo-100 text-white cursor-pointer active:scale-95 transition-transform" onClick={() => setView('dashboard')}>
                 <p className="text-[10px] font-black opacity-60 uppercase">Métricas</p>
@@ -219,14 +211,14 @@ const App: React.FC = () => {
             </div>
 
             <div>
-              <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-4">Minhas Tarefas</h2>
+              <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-4">Tarefas do Dia</h2>
               <div className="space-y-1">
                 {myTasks.filter(t => t.status !== 'concluido').map(task => (
                   <TaskCard key={task.id} task={task} onStart={handleStartTask} onFinish={() => { setActiveTask(task); setShowChecklist(true); }} currentUser={currentUser.name} />
                 ))}
                 {myTasks.filter(t => t.status !== 'concluido').length === 0 && (
                   <div className="text-center py-12 bg-white rounded-3xl border-2 border-dashed border-slate-200">
-                     <p className="text-slate-400 font-bold">Sem tarefas pendentes! 🎉</p>
+                     <p className="text-slate-400 font-bold">Tudo limpo por aqui! 🎉</p>
                   </div>
                 )}
               </div>
@@ -236,11 +228,11 @@ const App: React.FC = () => {
       </main>
 
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 p-4 flex justify-around items-center z-40 pb-8">
-        <button onClick={() => setView('home')} className={`p-2 ${view === 'home' ? 'text-indigo-600' : 'text-slate-400'}`}>🏠</button>
+        <button onClick={() => setView('home')} className={`p-2 text-2xl ${view === 'home' ? 'text-indigo-600' : 'text-slate-400'}`}>🏠</button>
         {isAdminOrManager && (
-          <button onClick={() => setShowAdmin(true)} className="w-14 h-14 bg-indigo-600 text-white rounded-2xl shadow-lg flex items-center justify-center -translate-y-4 active:scale-90 transition-transform">➕</button>
+          <button onClick={() => setShowAdmin(true)} className="w-14 h-14 bg-indigo-600 text-white rounded-2xl shadow-lg flex items-center justify-center -translate-y-4 active:scale-90 transition-transform text-2xl font-bold">＋</button>
         )}
-        <button onClick={() => setView('dashboard')} className={`p-2 ${view === 'dashboard' ? 'text-indigo-600' : 'text-slate-400'}`}>📊</button>
+        <button onClick={() => setView('dashboard')} className={`p-2 text-2xl ${view === 'dashboard' ? 'text-indigo-600' : 'text-slate-400'}`}>📊</button>
       </nav>
 
       {showChecklist && activeTask && (

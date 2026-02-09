@@ -1,36 +1,39 @@
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './App';
+import App from './App.tsx';
 
 const rootElement = document.getElementById('root');
 const errorOverlay = document.getElementById('error-overlay');
 const errorMessage = document.getElementById('error-message');
 
-if (!rootElement) {
-  throw new Error("Could not find root element to mount to");
-}
-
-try {
-  const root = ReactDOM.createRoot(rootElement);
-  root.render(
-    <React.StrictMode>
-      <App />
-    </React.StrictMode>
-  );
-} catch (error: any) {
-  console.error("FALHA CRÍTICA NO RENDER:", error);
+const showError = (msg: string) => {
   if (errorOverlay && errorMessage) {
     errorOverlay.style.display = 'flex';
-    errorMessage.innerText = error.message || "Ocorreu um erro inesperado ao iniciar a aplicação.";
+    errorMessage.innerText = msg;
+  }
+};
+
+if (!rootElement) {
+  console.error("ERRO: Elemento root não encontrado.");
+} else {
+  try {
+    const root = ReactDOM.createRoot(rootElement);
+    root.render(
+      <React.StrictMode>
+        <App />
+      </React.StrictMode>
+    );
+  } catch (error: any) {
+    console.error("FALHA NO RENDER:", error);
+    showError(error.message || "Erro inesperado ao renderizar a interface.");
   }
 }
 
-// Captura erros não tratados globalmente
 window.onerror = (message, source, lineno, colno, error) => {
-  console.error("ERRO GLOBAL:", message, error);
-  if (errorOverlay && errorMessage && !rootElement.innerHTML) {
-    errorOverlay.style.display = 'flex';
-    errorMessage.innerText = `Erro Global: ${message}`;
+  console.error("ERRO GLOBAL DETECTADO:", message, error);
+  // Só mostra o erro se a tela estiver branca (sem conteúdo no root)
+  if (rootElement && !rootElement.innerHTML) {
+    showError(`Erro Crítico: ${message}`);
   }
 };
