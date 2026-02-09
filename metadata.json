@@ -1,0 +1,7 @@
+{
+  "name": "Hostel Mauá - Limpeza",
+  "description": "Sistema de gerenciamento de limpeza e produtividade para o Hostel Mauá, com integração WhatsApp e métricas em tempo real.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
