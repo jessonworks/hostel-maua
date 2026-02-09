@@ -177,15 +177,15 @@ const App: React.FC = () => {
   const todayStr = new Date().toISOString().split('T')[0];
   const isAdminOrManager = currentUser.role === 'gerente' || currentUser.role === 'criador';
   
-  // Lógica de separação para Gestores
+  // Lógica de separação
   const inProgressTasks = tasks.filter(t => t.status === 'andamento');
   const pendingTasks = tasks.filter(t => t.status === 'pendente');
   const completedToday = tasks.filter(t => t.status === 'concluido' && t.completed_at?.startsWith(todayStr));
 
-  // Filtro específico para o que o usuário logado deve FAZER (ações de executor)
+  // Filtro específico para o que o usuário logado deve FAZER
   const myActionableTasks = tasks.filter(t => t.employee === currentUser.name && t.status !== 'concluido');
   
-  // Filtro para o que o gestor deve MONITORAR (gestão)
+  // Filtro para o que o gestor deve MONITORAR
   const myManagementTasks = tasks.filter(t => 
     (isAdminOrManager && t.status !== 'concluido') || 
     (t.assigned_by === currentUser.name && t.status !== 'concluido')
@@ -225,7 +225,7 @@ const App: React.FC = () => {
               </div>
             </div>
 
-            {/* SEÇÃO: MINHAS TAREFAS (Para todos que têm algo atribuído) */}
+            {/* SEÇÃO: MINHAS TAREFAS */}
             {myActionableTasks.length > 0 && (
               <section>
                 <div className="flex items-center gap-2 mb-4">
@@ -240,7 +240,7 @@ const App: React.FC = () => {
               </section>
             )}
 
-            {/* SEÇÃO: GESTÃO EM TEMPO REAL (Visível para Jeff e Jesson) */}
+            {/* SEÇÃO: GESTÃO EM TEMPO REAL */}
             {isAdminOrManager && (
               <section>
                 <div className="flex items-center gap-2 mb-4">
@@ -248,7 +248,6 @@ const App: React.FC = () => {
                   <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest">🎯 Monitoramento Hostel</h2>
                 </div>
                 
-                {/* Agrupamento por status para o Gestor */}
                 <div className="space-y-6">
                   {inProgressTasks.length > 0 && (
                     <div className="space-y-3">
@@ -277,8 +276,26 @@ const App: React.FC = () => {
               </section>
             )}
 
-            {/* SEÇÃO PARA FUNCIONÁRIO QUANDO NÃO HÁ TAREFAS */}
-            {!isAdminOrManager && myActionableTasks.length === 0 && (
+            {/* SEÇÃO: CONCLUÍDOS HOJE (Visível para todos) */}
+            {completedToday.length > 0 && (
+              <section className="pt-4 opacity-90">
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="w-2 h-6 bg-emerald-500 rounded-full"></span>
+                  <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
+                    ✅ Concluídos Hoje
+                    <span className="bg-emerald-100 text-emerald-600 text-[10px] px-2 py-0.5 rounded-full">{completedToday.length}</span>
+                  </h2>
+                </div>
+                <div className="space-y-1">
+                  {completedToday.map(task => (
+                    <TaskCard key={task.id} task={task} onStart={handleStartTask} onFinish={() => {}} currentUser={currentUser.name} />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* ESTADO VAZIO PARA FUNCIONÁRIOS */}
+            {!isAdminOrManager && myActionableTasks.length === 0 && completedToday.length === 0 && (
               <div className="text-center py-20 bg-white rounded-3xl border-2 border-dashed border-slate-200">
                  <div className="text-5xl mb-4">☕</div>
                  <h2 className="text-xl font-black text-slate-800">Tudo limpo por aqui!</h2>

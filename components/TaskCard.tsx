@@ -12,6 +12,7 @@ interface TaskCardProps {
 export const TaskCard: React.FC<TaskCardProps> = ({ task, onStart, onFinish, currentUser }) => {
   const [elapsed, setElapsed] = useState<string>('00:00');
   const isMine = task.employee === currentUser;
+  const isCompleted = task.status === 'concluido';
 
   useEffect(() => {
     let interval: number;
@@ -32,7 +33,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onStart, onFinish, cur
     switch (task.status) {
       case 'pendente': return 'bg-slate-100 text-slate-600 border-slate-200';
       case 'andamento': return 'bg-amber-50 text-amber-600 border-amber-200 animate-pulse';
-      case 'concluido': return 'bg-emerald-50 text-emerald-600 border-emerald-200';
+      case 'concluido': return 'bg-slate-50 text-emerald-600 border-slate-200 opacity-80';
       default: return 'bg-gray-100 border-transparent';
     }
   };
@@ -43,16 +44,16 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onStart, onFinish, cur
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
             <span className="text-2xl">{task.type === 'quarto' ? '🛏️' : '🧹'}</span>
-            <h3 className="font-extrabold text-slate-800 text-xl tracking-tight">
+            <h3 className={`font-extrabold text-xl tracking-tight ${isCompleted ? 'text-slate-500 line-through' : 'text-slate-800'}`}>
               {task.name}
             </h3>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <span className={`px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-widest border ${getStatusColor()}`}>
-              {task.status === 'andamento' ? '⚡ EM LIMPEZA' : task.status}
+              {task.status === 'andamento' ? '⚡ EM LIMPEZA' : isCompleted ? '✅ FINALIZADO' : '⏳ PENDENTE'}
             </span>
             {task.employee && (
-              <span className="bg-indigo-50 text-indigo-600 px-2 py-1 rounded-md text-[10px] font-black border border-indigo-100 uppercase">
+              <span className={`${isCompleted ? 'bg-slate-100 text-slate-500' : 'bg-indigo-50 text-indigo-600'} px-2 py-1 rounded-md text-[10px] font-black border border-indigo-100 uppercase`}>
                 👤 {task.employee}
               </span>
             )}
@@ -67,7 +68,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onStart, onFinish, cur
         )}
       </div>
 
-      {task.notes && (
+      {task.notes && !isCompleted && (
         <div className="mt-3 p-3 bg-slate-50 rounded-xl border border-dashed border-slate-200">
           <p className="text-[9px] font-black text-slate-400 uppercase mb-1">Instrução:</p>
           <p className="text-sm text-slate-600 italic">"{task.notes}"</p>
@@ -99,11 +100,11 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onStart, onFinish, cur
              </p>
            </div>
         )}
-        {task.status === 'concluido' && (
-          <div className="text-center w-full text-emerald-600 text-sm font-black flex flex-col items-center justify-center gap-1 bg-emerald-50/50 py-3 rounded-xl border border-emerald-100">
-             <span>✅ CONCLUÍDO</span>
-             <span className="text-[10px] opacity-70">
-               Finalizado às {task.completed_at ? new Date(task.completed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''} por {task.employee}
+        {isCompleted && (
+          <div className="text-left w-full text-slate-400 text-[10px] font-bold flex items-center gap-2 bg-slate-50/50 p-2 rounded-lg">
+             <span className="bg-emerald-500 w-2 h-2 rounded-full animate-pulse"></span>
+             <span>
+               Concluído por <strong className="text-slate-600">{task.employee}</strong> às {task.completed_at ? new Date(task.completed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
              </span>
           </div>
         )}
