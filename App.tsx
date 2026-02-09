@@ -176,11 +176,23 @@ const App: React.FC = () => {
 
   const todayStr = new Date().toISOString().split('T')[0];
   const isAdminOrManager = currentUser.role === 'gerente' || currentUser.role === 'criador';
-  const myTasks = tasks.filter(t => t.employee === currentUser.name || (!t.employee && isAdminOrManager));
-  const completedTodayCount = tasks.filter(t => t.status === 'concluido' && t.completed_at?.startsWith(todayStr)).length;
+  
+  // Lógica de separação para Gestores
+  const inProgressTasks = tasks.filter(t => t.status === 'andamento');
+  const pendingTasks = tasks.filter(t => t.status === 'pendente');
+  const completedToday = tasks.filter(t => t.status === 'concluido' && t.completed_at?.startsWith(todayStr));
+
+  // Filtro específico para o que o usuário logado deve FAZER (ações de executor)
+  const myActionableTasks = tasks.filter(t => t.employee === currentUser.name && t.status !== 'concluido');
+  
+  // Filtro para o que o gestor deve MONITORAR (gestão)
+  const myManagementTasks = tasks.filter(t => 
+    (isAdminOrManager && t.status !== 'concluido') || 
+    (t.assigned_by === currentUser.name && t.status !== 'concluido')
+  );
 
   return (
-    <div className="min-h-screen pb-32">
+    <div className="min-h-screen pb-32 bg-slate-50/50">
       <header className="bg-white p-6 sticky top-0 z-30 border-b border-slate-100 shadow-sm flex justify-between items-center">
         <div>
           <h1 className="text-xl font-black text-slate-800 tracking-tight">MAUÁ HUB</h1>
@@ -188,10 +200,10 @@ const App: React.FC = () => {
             {currentUser.role.toUpperCase()} • {currentUser.name}
           </p>
         </div>
-        <button onClick={() => setCurrentUser(null)} className="p-3 bg-slate-50 rounded-xl text-slate-400">🚪</button>
+        <button onClick={() => setCurrentUser(null)} className="p-3 bg-slate-50 rounded-xl text-slate-400 active:bg-slate-100">🚪</button>
       </header>
 
-      <main className="max-w-2xl mx-auto p-4 space-y-6">
+      <main className="max-w-2xl mx-auto p-4 space-y-8">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20">
             <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4"></div>
@@ -201,38 +213,88 @@ const App: React.FC = () => {
           <>
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
-                <p className="text-[10px] font-black text-slate-400 uppercase">Status Global</p>
-                <p className="text-3xl font-black text-indigo-600">{completedTodayCount} ✅</p>
+                <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Status Global</p>
+                <p className="text-3xl font-black text-indigo-600">{completedToday.length} ✅</p>
               </div>
-              <div className="bg-indigo-600 p-4 rounded-2xl shadow-lg shadow-indigo-100 text-white cursor-pointer active:scale-95 transition-transform" onClick={() => setView('dashboard')}>
+              <div className="bg-indigo-600 p-4 rounded-2xl shadow-lg shadow-indigo-100 text-white cursor-pointer active:scale-95 transition-transform flex flex-col justify-between" onClick={() => setView('dashboard')}>
                 <p className="text-[10px] font-black opacity-60 uppercase">Métricas</p>
-                <p className="text-xl font-black">Dashboard 📈</p>
+                <div className="flex justify-between items-end">
+                  <p className="text-xl font-black">Dashboard</p>
+                  <span className="text-xl">📈</span>
+                </div>
               </div>
             </div>
 
-            <div>
-              <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-4">Tarefas do Dia</h2>
-              <div className="space-y-1">
-                {myTasks.filter(t => t.status !== 'concluido').map(task => (
-                  <TaskCard key={task.id} task={task} onStart={handleStartTask} onFinish={() => { setActiveTask(task); setShowChecklist(true); }} currentUser={currentUser.name} />
-                ))}
-                {myTasks.filter(t => t.status !== 'concluido').length === 0 && (
-                  <div className="text-center py-12 bg-white rounded-3xl border-2 border-dashed border-slate-200">
-                     <p className="text-slate-400 font-bold">Tudo limpo por aqui! 🎉</p>
-                  </div>
-                )}
+            {/* SEÇÃO: MINHAS TAREFAS (Para todos que têm algo atribuído) */}
+            {myActionableTasks.length > 0 && (
+              <section>
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="w-2 h-6 bg-indigo-500 rounded-full"></span>
+                  <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest">👷 Minhas Tarefas</h2>
+                </div>
+                <div className="space-y-1">
+                  {myActionableTasks.map(task => (
+                    <TaskCard key={task.id} task={task} onStart={handleStartTask} onFinish={() => { setActiveTask(task); setShowChecklist(true); }} currentUser={currentUser.name} />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* SEÇÃO: GESTÃO EM TEMPO REAL (Visível para Jeff e Jesson) */}
+            {isAdminOrManager && (
+              <section>
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="w-2 h-6 bg-amber-500 rounded-full"></span>
+                  <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest">🎯 Monitoramento Hostel</h2>
+                </div>
+                
+                {/* Agrupamento por status para o Gestor */}
+                <div className="space-y-6">
+                  {inProgressTasks.length > 0 && (
+                    <div className="space-y-3">
+                      <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest ml-1">⚡ Em Execução Agora</p>
+                      {inProgressTasks.map(task => (
+                        <TaskCard key={task.id} task={task} onStart={handleStartTask} onFinish={() => { setActiveTask(task); setShowChecklist(true); }} currentUser={currentUser.name} />
+                      ))}
+                    </div>
+                  )}
+
+                  {pendingTasks.length > 0 && (
+                    <div className="space-y-3">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">⏳ Aguardando Início</p>
+                      {pendingTasks.map(task => (
+                        <TaskCard key={task.id} task={task} onStart={handleStartTask} onFinish={() => { setActiveTask(task); setShowChecklist(true); }} currentUser={currentUser.name} />
+                      ))}
+                    </div>
+                  )}
+
+                  {myManagementTasks.length === 0 && (
+                    <div className="text-center py-12 bg-white rounded-3xl border-2 border-dashed border-slate-200">
+                      <p className="text-slate-400 font-bold">Nenhuma tarefa ativa no momento. 🎉</p>
+                    </div>
+                  )}
+                </div>
+              </section>
+            )}
+
+            {/* SEÇÃO PARA FUNCIONÁRIO QUANDO NÃO HÁ TAREFAS */}
+            {!isAdminOrManager && myActionableTasks.length === 0 && (
+              <div className="text-center py-20 bg-white rounded-3xl border-2 border-dashed border-slate-200">
+                 <div className="text-5xl mb-4">☕</div>
+                 <h2 className="text-xl font-black text-slate-800">Tudo limpo por aqui!</h2>
+                 <p className="text-slate-400 font-medium">Aproveite o seu descanso ou aguarde novas ordens.</p>
               </div>
-            </div>
+            )}
           </>
         )}
       </main>
 
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 p-4 flex justify-around items-center z-40 pb-8">
-        <button onClick={() => setView('home')} className={`p-2 text-2xl ${view === 'home' ? 'text-indigo-600' : 'text-slate-400'}`}>🏠</button>
+        <button onClick={() => setView('home')} className={`p-2 text-2xl transition-all ${view === 'home' ? 'text-indigo-600 scale-110' : 'text-slate-400'}`}>🏠</button>
         {isAdminOrManager && (
-          <button onClick={() => setShowAdmin(true)} className="w-14 h-14 bg-indigo-600 text-white rounded-2xl shadow-lg flex items-center justify-center -translate-y-4 active:scale-90 transition-transform text-2xl font-bold">＋</button>
+          <button onClick={() => setShowAdmin(true)} className="w-14 h-14 bg-indigo-600 text-white rounded-2xl shadow-lg flex items-center justify-center -translate-y-6 active:scale-90 transition-transform text-2xl font-bold border-4 border-white">＋</button>
         )}
-        <button onClick={() => setView('dashboard')} className={`p-2 text-2xl ${view === 'dashboard' ? 'text-indigo-600' : 'text-slate-400'}`}>📊</button>
+        <button onClick={() => setView('dashboard')} className={`p-2 text-2xl transition-all ${view === 'dashboard' ? 'text-indigo-600 scale-110' : 'text-slate-400'}`}>📊</button>
       </nav>
 
       {showChecklist && activeTask && (

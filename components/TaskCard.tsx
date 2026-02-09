@@ -30,64 +30,81 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onStart, onFinish, cur
 
   const getStatusColor = () => {
     switch (task.status) {
-      case 'pendente': return 'bg-slate-100 text-slate-600';
-      case 'andamento': return 'bg-amber-100 text-amber-600 animate-pulse';
-      case 'concluido': return 'bg-emerald-100 text-emerald-600';
-      default: return 'bg-gray-100';
+      case 'pendente': return 'bg-slate-100 text-slate-600 border-slate-200';
+      case 'andamento': return 'bg-amber-50 text-amber-600 border-amber-200 animate-pulse';
+      case 'concluido': return 'bg-emerald-50 text-emerald-600 border-emerald-200';
+      default: return 'bg-gray-100 border-transparent';
     }
   };
 
   return (
-    <div className={`p-4 mb-3 rounded-xl border transition-all ${task.status === 'andamento' ? 'border-amber-400 shadow-lg ring-2 ring-amber-100' : 'border-slate-200'} bg-white`}>
-      <div className="flex justify-between items-start mb-2">
-        <div>
-          <h3 className="font-bold text-slate-800 flex items-center gap-2 text-lg">
-            {task.type === 'quarto' ? '🛏️' : '🧹'} {task.name}
-          </h3>
-          <p className="text-sm text-slate-500">
-            {task.employee ? `Atribuído a: ${task.employee}` : 'Aguardando atribuição'}
-          </p>
+    <div className={`p-5 mb-4 rounded-2xl border-2 transition-all ${task.status === 'andamento' ? 'shadow-xl scale-[1.02] bg-white z-10' : 'bg-white shadow-sm'} ${getStatusColor().split(' ')[2]}`}>
+      <div className="flex justify-between items-start mb-3">
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-2xl">{task.type === 'quarto' ? '🛏️' : '🧹'}</span>
+            <h3 className="font-extrabold text-slate-800 text-xl tracking-tight">
+              {task.name}
+            </h3>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className={`px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-widest border ${getStatusColor()}`}>
+              {task.status === 'andamento' ? '⚡ EM LIMPEZA' : task.status}
+            </span>
+            {task.employee && (
+              <span className="bg-indigo-50 text-indigo-600 px-2 py-1 rounded-md text-[10px] font-black border border-indigo-100 uppercase">
+                👤 {task.employee}
+              </span>
+            )}
+          </div>
         </div>
-        <div className="flex flex-col items-end">
-          <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${getStatusColor()}`}>
-            {task.status === 'andamento' ? 'Em Limpeza' : task.status}
-          </span>
-          {task.status === 'andamento' && (
-            <span className="text-amber-600 font-black text-sm mt-1">⏱️ {elapsed}</span>
-          )}
-        </div>
+        
+        {task.status === 'andamento' && (
+          <div className="text-right">
+            <p className="text-[10px] font-black text-amber-400 uppercase leading-none mb-1">Duração</p>
+            <span className="text-2xl font-black text-amber-500 tabular-nums">{elapsed}</span>
+          </div>
+        )}
       </div>
 
       {task.notes && (
-        <div className="mt-2 p-3 bg-indigo-50/50 rounded-lg border border-indigo-100/50">
-          <p className="text-xs font-bold text-indigo-400 uppercase mb-1 flex items-center gap-1">
-            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fillRule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clipRule="evenodd" /></svg>
-            Nota do Gerente:
-          </p>
+        <div className="mt-3 p-3 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+          <p className="text-[9px] font-black text-slate-400 uppercase mb-1">Instrução:</p>
           <p className="text-sm text-slate-600 italic">"{task.notes}"</p>
         </div>
       )}
 
-      <div className="flex gap-2 mt-4">
-        {task.status === 'pendente' && (
+      <div className="flex gap-2 mt-5">
+        {task.status === 'pendente' && isMine && (
           <button
             onClick={() => onStart(task)}
-            className="flex-1 bg-indigo-600 text-white font-bold py-3 rounded-lg active:scale-95 transition-transform touch-target shadow-md"
+            className="flex-1 bg-indigo-600 text-white font-black py-4 rounded-xl active:scale-95 transition-transform shadow-lg shadow-indigo-100"
           >
-            ▶️ Iniciar Limpeza
+            🚀 INICIAR AGORA
           </button>
         )}
         {task.status === 'andamento' && isMine && (
           <button
             onClick={() => onFinish(task)}
-            className="flex-1 bg-emerald-500 text-white font-bold py-3 rounded-lg active:scale-95 transition-transform touch-target shadow-md flex items-center justify-center gap-2"
+            className="flex-1 bg-emerald-500 text-white font-black py-4 rounded-xl active:scale-95 transition-transform shadow-lg shadow-emerald-100 flex items-center justify-center gap-2"
           >
-            📋 Abrir Checklist
+            📋 FINALIZAR CHECKLIST
           </button>
         )}
+        {!isMine && task.status !== 'concluido' && (
+           <div className="flex-1 py-3 px-4 bg-slate-50 rounded-xl border border-slate-100 text-center">
+             <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Status do Gestor</p>
+             <p className="text-xs font-bold text-slate-600">
+               {task.status === 'andamento' ? `Em execução por ${task.employee}` : `Aguardando ${task.employee}`}
+             </p>
+           </div>
+        )}
         {task.status === 'concluido' && (
-          <div className="text-center w-full text-emerald-600 text-sm font-bold flex items-center justify-center gap-1 bg-emerald-50 py-2 rounded-lg">
-             ✅ Concluído em {task.completed_at ? new Date(task.completed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+          <div className="text-center w-full text-emerald-600 text-sm font-black flex flex-col items-center justify-center gap-1 bg-emerald-50/50 py-3 rounded-xl border border-emerald-100">
+             <span>✅ CONCLUÍDO</span>
+             <span className="text-[10px] opacity-70">
+               Finalizado às {task.completed_at ? new Date(task.completed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''} por {task.employee}
+             </span>
           </div>
         )}
       </div>
