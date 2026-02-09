@@ -133,7 +133,7 @@ const App: React.FC = () => {
         <div className="bg-slate-800 p-6 rounded-2xl text-left w-full max-w-md border border-slate-700">
           <p className="text-xs font-bold text-indigo-400 uppercase mb-4">Ação necessária no Vercel:</p>
           <ol className="text-sm space-y-3 text-slate-300">
-            <li>1. Vá em <b>Settings > Environment Variables</b></li>
+            <li>1. Vá em <b>Settings &gt; Environment Variables</b></li>
             <li>2. Adicione <b>VITE_SUPABASE_URL</b></li>
             <li>3. Adicione <b>VITE_SUPABASE_ANON_KEY</b></li>
             <li>4. Realize um novo <b>Deploy</b></li>
