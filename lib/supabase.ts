@@ -1,11 +1,19 @@
 
-// In a real environment, you'd use @supabase/supabase-js
-// For this demo, we'll implement a mock service if the keys are missing
-// but write the code as if it were the real Supabase SDK.
-
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key';
+// No ambiente de produção (Vercel), estas variáveis devem ser configuradas.
+// Caso contrário, o console avisará o desenvolvedor.
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.warn(
+    '⚠️ ATENÇÃO: Chaves do Supabase não encontradas. Verifique as Variáveis de Ambiente no Vercel/Local.\n' +
+    'O sistema não conseguirá salvar dados até que NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY sejam configuradas.'
+  );
+}
+
+export const supabase = createClient(
+  supabaseUrl || 'https://placeholder.supabase.co', 
+  supabaseAnonKey || 'placeholder-key'
+);

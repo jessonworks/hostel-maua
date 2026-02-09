@@ -4,10 +4,10 @@ import { User } from './types';
 export const MANAGER_PHONE = '+5521983584197';
 
 export const EMPLOYEES: User[] = [
-  { name: 'João', role: 'funcionario', pin: '1111' },
+  { name: 'Joao', role: 'funcionario', pin: '1111' },
   { name: 'Rose', role: 'funcionario', pin: '2222' },
-  { name: 'Jefferson', role: 'funcionario', pin: '3333' },
-  { name: 'Gerente', role: 'gerente', pin: '0000' },
+  { name: 'Jeff', role: 'gerente', pin: '0000' },
+  { name: 'Jesson', role: 'criador', pin: '9999' },
 ];
 
 export const ROOMS = [
