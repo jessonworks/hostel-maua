@@ -20,6 +20,7 @@ export interface User {
   name: string;
   role: 'gerente' | 'funcionario' | 'criador';
   pin: string;
+  phone?: string;
 }
 
 export interface ProductivityStats {

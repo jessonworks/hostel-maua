@@ -6,7 +6,7 @@ import { TaskCard } from './components/TaskCard.tsx';
 import { ChecklistModal } from './components/ChecklistModal.tsx';
 import { Dashboard } from './components/Dashboard.tsx';
 import { AdminPanel } from './components/AdminPanel.tsx';
-import { openWhatsApp } from './utils/whatsapp.ts';
+import { openWhatsApp, openAssignmentWhatsApp } from './utils/whatsapp.ts';
 import { supabase, isSupabaseConfigured } from './lib/supabase.ts';
 
 const App: React.FC = () => {
@@ -117,6 +117,10 @@ const App: React.FC = () => {
     } else {
       await loadTasks();
       setShowAdmin(false);
+      // Notifica o funcionário via WhatsApp
+      if (employee) {
+        openAssignmentWhatsApp(name, employee, currentUser.name, notes);
+      }
     }
   };
 
