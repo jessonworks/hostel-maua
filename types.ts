@@ -7,7 +7,7 @@ export interface Task {
   name: string;
   type: TaskType;
   employee: string | null;
-  assigned_by: string | null; // Novo campo para rastrear quem criou
+  assigned_by: string | null;
   status: TaskStatus;
   checklist: Record<string, boolean>;
   notes?: string;
@@ -21,6 +21,13 @@ export interface User {
   role: 'gerente' | 'funcionario' | 'criador';
   pin: string;
   phone?: string;
+}
+
+export interface Message {
+  id: string;
+  user_name: string;
+  content: string;
+  created_at: string;
 }
 
 export interface ProductivityStats {

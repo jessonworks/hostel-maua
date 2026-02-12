@@ -29,15 +29,48 @@ export const ROOMS = [
 
 export const AREAS = ['Cozinha', 'Recepção', 'Escadas', 'Laje'];
 
-export const CHECKLIST_ITEMS = [
-  'Trocar roupa de cama',
-  'Limpar banheiro completo',
-  'Aspirar/varrer o chão',
-  'Tirar lixo',
-  'Reabastecer amenities',
-  'Verificar AC/Ventilador',
-  'Limpar superfícies e móveis',
-  'Organizar o quarto'
-];
+export const CHECKLISTS_BY_AREA: Record<string, string[]> = {
+  'Quarto': [
+    'Trocar roupa de cama e toalhas',
+    'Limpar banheiro completo (box, vaso, pia)',
+    'Aspirar e varrer o chão',
+    'Tirar lixo e repor sacos',
+    'Reabastecer amenities (papel, sabonete)',
+    'Limpar espelhos e vidros',
+    'Verificar AC / Ventilador / Luzes',
+    'Organizar móveis e conferir frigobar'
+  ],
+  'Cozinha': [
+    'Limpar fogão e bancadas',
+    'Organizar geladeira (descartar itens vencidos)',
+    'Lavar louça pendente e organizar armários',
+    'Tirar lixo orgânico e reciclável',
+    'Varrer e passar pano no piso'
+  ],
+  'Recepção': [
+    'Limpar balcão e computador',
+    'Organizar pastas e chaves',
+    'Limpar vidros da fachada',
+    'Verificar material de escritório',
+    'Varrer a entrada principal'
+  ],
+  'Escadas': [
+    'Varrer todos os degraus',
+    'Passar pano úmido com desinfetante',
+    'Limpar corrimãos',
+    'Retirar teias de aranha dos cantos'
+  ],
+  'Laje': [
+    'Organizar mesas, cadeiras e pufes',
+    'Esvaziar cinzeiros e lixeiras',
+    'Verificar plantas (regar se necessário)',
+    'Varrer toda a área aberta',
+    'Limpar superfícies da churrasqueira/bar'
+  ]
+};
 
+// Fix for error in utils/whatsapp.ts: Provide default checklist items
+export const CHECKLIST_ITEMS = CHECKLISTS_BY_AREA['Quarto'];
+
+// Fix for error in components/Dashboard.tsx: Define daily completion goal
 export const DAILY_GOAL = 8;
