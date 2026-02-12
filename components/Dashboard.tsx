@@ -16,125 +16,113 @@ export const Dashboard: React.FC<DashboardProps> = ({ tasks, onBack, userRole, c
   const isAdmin = isCreator || isManager;
   const today = new Date().toISOString().split('T')[0];
 
-  const tasksToday = tasks.filter(t => t.created_at?.startsWith(today) || t.completed_at?.startsWith(today));
-  const completedTodayGlobal = tasksToday.filter(t => t.status === 'concluido');
-  
-  const totalCreated = tasks.length;
-  const totalCompleted = tasks.filter(t => t.status === 'concluido').length;
-  const globalEfficiency = tasksToday.length > 0 ? Math.round((completedTodayGlobal.length / tasksToday.length) * 100) : 0;
-
-  // Auditoria Dinâmica: Produção por funcionário hoje
-  const employeePerformance = EMPLOYEES.filter(e => e.role === 'funcionario').map(emp => {
-    const empTasksToday = tasks.filter(t => t.employee === emp.name && (t.status !== 'concluido' || t.completed_at?.startsWith(today)));
-    const empCompletedToday = empTasksToday.filter(t => t.status === 'concluido').length;
-    const totalAssignedToday = empTasksToday.length;
-
-    return {
-      name: emp.name,
-      completed: empCompletedToday,
-      total: totalAssignedToday,
-      efficiency: totalAssignedToday > 0 ? Math.round((empCompletedToday / totalAssignedToday) * 100) : 0
-    };
-  });
+  const tasksPending = tasks.filter(t => t.status !== 'concluido');
+  const tasksInDev = tasks.filter(t => t.status === 'andamento');
+  const tasksCompletedToday = tasks.filter(t => t.status === 'concluido' && t.completed_at?.startsWith(today));
 
   return (
-    <div className="space-y-6">
-      {/* Resumo Visual Superior */}
+    <div className="space-y-6 pb-10">
+      {/* Quadro de Status Operacional */}
       <div className="grid grid-cols-2 gap-4">
-        <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col justify-between h-40">
+        <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col justify-between">
            <div>
-             <span className="text-2xl mb-2 block">🎯</span>
-             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Status Geral</p>
+             <span className="text-2xl mb-2 block">🧹</span>
+             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Em Execução</p>
            </div>
-           <div>
-             <p className="text-3xl font-black text-slate-900">{globalEfficiency}%</p>
-             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">do Hostel pronto hoje</p>
-           </div>
-           <div className="w-full h-1.5 bg-slate-100 rounded-full mt-2 overflow-hidden">
-             <div className="h-full bg-indigo-500 rounded-full transition-all duration-1000" style={{ width: `${globalEfficiency}%` }}></div>
+           <div className="mt-4">
+             <p className="text-3xl font-black text-amber-500">{tasksInDev.length}</p>
+             <p className="text-[9px] font-bold text-slate-400 uppercase">Sendo limpos agora</p>
            </div>
         </div>
 
-        <div className="bg-[#1E293B] p-6 rounded-[2.5rem] shadow-xl text-white flex flex-col justify-between h-40">
+        <div className="bg-[#1E293B] p-6 rounded-[2.5rem] shadow-xl text-white flex flex-col justify-between">
            <div>
              <span className="text-2xl mb-2 block">✅</span>
-             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Concluído</p>
+             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Prontos Hoje</p>
            </div>
-           <div>
-             <p className="text-4xl font-black">{completedTodayGlobal.length}</p>
-             <p className="text-[9px] font-bold opacity-60 uppercase">Tarefas finalizadas hoje</p>
+           <div className="mt-4">
+             <p className="text-4xl font-black">{tasksCompletedToday.length}</p>
+             <p className="text-[9px] font-bold opacity-60 uppercase">Finalizados com sucesso</p>
            </div>
         </div>
       </div>
 
-      {/* Seção de Equipe */}
+      {/* Quem está onde? */}
       <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm">
         <div className="flex items-center justify-between mb-8">
            <h3 className="font-black text-slate-800 uppercase text-[10px] tracking-[0.2em] flex items-center gap-2">
             <span className="w-1.5 h-4 bg-indigo-600 rounded-full"></span>
-            Produção da Equipe
+            Quem está na ativa?
           </h3>
-          <span className="text-[8px] font-black bg-indigo-50 text-indigo-600 px-2 py-1 rounded-md">EM TEMPO REAL</span>
         </div>
 
-        <div className="space-y-8">
-          {employeePerformance.map((emp) => (
-            <div key={emp.name} className="group">
-              <div className="flex justify-between items-center mb-3">
-                <div className="flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-black text-xs ${emp.efficiency === 100 ? 'bg-emerald-500' : 'bg-slate-800'}`}>
+        <div className="space-y-6">
+          {EMPLOYEES.filter(e => e.role === 'funcionario').map((emp) => {
+            const currentTask = tasks.find(t => t.employee === emp.name && t.status === 'andamento');
+            return (
+              <div key={emp.name} className="flex items-center justify-between group">
+                <div className="flex items-center gap-4">
+                  <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-black text-xs ${currentTask ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-400'}`}>
                     {emp.name[0]}
                   </div>
                   <div>
                     <p className="font-black text-sm text-slate-800 leading-none">{emp.name}</p>
-                    <p className="text-[9px] text-slate-400 font-bold uppercase mt-1">{emp.completed} / {emp.total} TAREFAS</p>
+                    <p className={`text-[9px] font-bold uppercase mt-1 ${currentTask ? 'text-amber-500' : 'text-slate-400'}`}>
+                      {currentTask ? `Trabalhando no ${currentTask.name}` : 'Aguardando Direcionamento'}
+                    </p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className={`text-sm font-black ${emp.efficiency === 100 ? 'text-emerald-500' : 'text-slate-800'}`}>
-                    {emp.efficiency}%
-                  </p>
-                </div>
+                {currentTask && (
+                  <span className="w-2 h-2 bg-amber-500 rounded-full animate-ping"></span>
+                )}
               </div>
-              <div className="w-full h-3 bg-slate-50 rounded-full overflow-hidden p-0.5 border border-slate-100 shadow-inner">
-                <div 
-                  className={`h-full rounded-full transition-all duration-1000 ${emp.efficiency === 100 ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'bg-indigo-500 shadow-[0_0_10px_rgba(79,70,229,0.3)]'}`} 
-                  style={{ width: `${emp.efficiency}%` }} 
-                />
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
-      {/* Métricas Administrativas */}
+      {/* Lista de Próximas Atividades */}
+      <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm">
+        <h3 className="font-black text-slate-800 uppercase text-[10px] tracking-[0.2em] mb-6 flex items-center gap-2">
+          <span className="w-1.5 h-4 bg-emerald-500 rounded-full"></span>
+          Próximas Tarefas
+        </h3>
+        
+        {tasksPending.filter(t => t.status === 'pendente').length === 0 ? (
+          <p className="text-xs text-slate-400 font-bold italic text-center py-4">Nenhuma tarefa na fila.</p>
+        ) : (
+          <div className="space-y-3">
+            {tasksPending.filter(t => t.status === 'pendente').map(t => (
+              <div key={t.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl">
+                 <div className="flex items-center gap-3">
+                   <span className="text-lg">📍</span>
+                   <p className="font-black text-xs text-slate-700 uppercase">{t.name}</p>
+                 </div>
+                 <span className="text-[8px] font-black bg-white px-2 py-1 rounded-md text-slate-400 border border-slate-100">
+                    DIRECIONADO PARA {t.employee?.toUpperCase()}
+                 </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Área Administrativa */}
       {isAdmin && (
-        <div className="bg-[#1E293B] p-8 rounded-[3rem] shadow-2xl text-white relative overflow-hidden">
-          <div className="relative z-10">
-            <h3 className="font-black text-indigo-400 uppercase text-[10px] tracking-[0.2em] mb-6 flex items-center gap-2">
-              <span className="text-sm">📈</span>
-              Métricas do Gestor
-            </h3>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-white/5 border border-white/10 p-4 rounded-2xl">
-                 <p className="text-[8px] font-black text-white/40 uppercase mb-1">Histórico Total</p>
-                 <p className="text-2xl font-black">{totalCreated}</p>
-              </div>
-              <div className="bg-white/5 border border-white/10 p-4 rounded-2xl">
-                 <p className="text-[8px] font-black text-white/40 uppercase mb-1">Taxa Geral</p>
-                 <p className="text-2xl font-black">{Math.round((totalCompleted/totalCreated)*100 || 0)}%</p>
-              </div>
+        <div className="bg-[#1E293B] p-8 rounded-[3rem] shadow-2xl text-white">
+          <h3 className="font-black text-indigo-400 uppercase text-[10px] tracking-[0.2em] mb-6">Controle de Fluxo</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-white/5 border border-white/10 p-5 rounded-2xl text-center">
+              <p className="text-[2rem] font-black leading-none mb-1">{tasksPending.length}</p>
+              <p className="text-[8px] font-black opacity-40 uppercase tracking-widest">Aguardando</p>
+            </div>
+            <div className="bg-white/5 border border-white/10 p-5 rounded-2xl text-center">
+              <p className="text-[2rem] font-black leading-none mb-1">{tasks.length}</p>
+              <p className="text-[8px] font-black opacity-40 uppercase tracking-widest">Total Criado</p>
             </div>
           </div>
-          <div className="absolute top-0 right-0 w-40 h-40 bg-indigo-500/20 rounded-full blur-[80px]"></div>
         </div>
       )}
-
-      {/* Rodapé de Motivação */}
-      <div className="bg-indigo-50 p-6 rounded-[2.5rem] text-center border-2 border-indigo-100">
-         <p className="text-indigo-900 text-[10px] font-black uppercase tracking-widest">Rumo ao 100%!</p>
-         <p className="text-indigo-400 text-[9px] mt-1 font-bold italic">Cada quarto limpo é um cliente satisfeito.</p>
-      </div>
     </div>
   );
 };

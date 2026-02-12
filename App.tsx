@@ -151,7 +151,11 @@ const App: React.FC = () => {
 
   const handleCompleteTask = async (task: Task) => {
     if (!currentUser) return;
-    await supabase.from('tasks').update({ status: 'concluido', completed_at: new Date().toISOString() }).eq('id', task.id);
+    const { error } = await supabase.from('tasks').update({ status: 'concluido', completed_at: new Date().toISOString() }).eq('id', task.id);
+    if (error) {
+      alert("Erro ao concluir: " + error.message);
+      return;
+    }
     await loadTasks();
     setShowChecklist(false);
     setActiveTask(null);
@@ -172,13 +176,13 @@ const App: React.FC = () => {
     return (
       <div className="min-h-screen bg-[#0F172A] flex flex-col items-center justify-center p-6 text-white">
         <div className="mb-12 text-center">
-          <div className="w-28 h-28 bg-indigo-600 rounded-[2.5rem] shadow-[0_0_50px_rgba(79,70,229,0.3)] flex items-center justify-center mx-auto mb-8 animate-pulse">
+          <div className="w-28 h-28 bg-indigo-600 rounded-[2.5rem] shadow-[0_0_50px_rgba(79,70,229,0.3)] flex items-center justify-center mx-auto mb-8">
             <span className="text-5xl">🏨</span>
           </div>
           <h1 className="text-4xl font-black mb-2 tracking-tighter italic">MAUÁ HUB</h1>
           <p className="text-slate-500 font-bold uppercase tracking-[0.3em] text-[10px]">Sistema de Gestão Interna</p>
         </div>
-        <div className="w-full max-w-sm bg-white rounded-[3rem] p-10 shadow-2xl text-slate-800">
+        <div className="w-full max-sm bg-white rounded-[3rem] p-10 shadow-2xl text-slate-800">
           <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 text-center">Acesso via PIN Individual</label>
           <input type="password" inputMode="numeric" pattern="[0-9]*" value={pin} onChange={(e) => setPin(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleLogin()} className="w-full text-5xl text-center tracking-[1rem] py-4 border-b-4 border-slate-100 focus:border-indigo-600 focus:outline-none transition-all font-black mb-10 text-indigo-600" maxLength={4} autoFocus />
           <button onClick={handleLogin} className="w-full py-6 bg-indigo-600 text-white font-black rounded-3xl shadow-xl shadow-indigo-200 active:scale-95 transition-all uppercase tracking-widest text-sm">Entrar no Turno</button>
@@ -189,8 +193,6 @@ const App: React.FC = () => {
 
   const isAdmin = currentUser.role === 'gerente' || currentUser.role === 'criador';
   const myTodayTasks = tasks.filter(t => t.employee === currentUser.name && (t.status !== 'concluido' || t.completed_at?.startsWith(todayStr)));
-  const myCompletedToday = myTodayTasks.filter(t => t.status === 'concluido').length;
-  const totalMyTasks = myTodayTasks.length;
 
   return (
     <div className={`min-h-screen bg-[#F8FAFC] ${view === 'chat' ? 'h-screen flex flex-col pb-24 overflow-hidden' : 'pb-36'}`}>
@@ -239,7 +241,7 @@ const App: React.FC = () => {
           <div className="flex items-center gap-3">
              <button onClick={() => setView('home')} className="w-8 h-8 flex items-center justify-center bg-slate-100 rounded-lg text-slate-500">🏠</button>
              <h2 className="font-black text-slate-800 uppercase text-[10px] tracking-widest">
-                {view === 'chat' ? 'Mural da Equipe' : 'Métricas & Relatório'}
+                {view === 'chat' ? 'Mural da Equipe' : 'Visão Geral do Hotel'}
              </h2>
           </div>
           <div className="w-8 h-8 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center text-[10px] font-black">
@@ -262,40 +264,37 @@ const App: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-               <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm relative overflow-hidden">
-                  <p className="text-[10px] font-black text-slate-400 uppercase mb-3 tracking-widest">Minha Meta</p>
-                  <div className="flex items-end gap-2">
-                    <p className="text-4xl font-black text-indigo-600">{myCompletedToday}</p>
-                    <p className="text-lg font-black text-slate-300 mb-1">/ {totalMyTasks}</p>
+               <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col justify-between">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Atividades</p>
+                  <div className="flex items-center gap-3 mt-2">
+                    <span className="text-3xl">📝</span>
+                    <p className="text-2xl font-black text-indigo-600">{tasks.filter(t => t.status !== 'concluido').length}</p>
                   </div>
-                  <div className="w-full h-2.5 bg-slate-100 rounded-full mt-4 overflow-hidden shadow-inner">
-                    <div className="h-full bg-indigo-500 transition-all duration-1000" style={{ width: `${totalMyTasks > 0 ? (myCompletedToday / totalMyTasks) * 100 : 0}%` }}></div>
-                  </div>
-                  <div className="absolute right-4 top-4 text-2xl opacity-20">🎯</div>
+                  <p className="text-[9px] font-bold text-slate-400 mt-2 uppercase">Pendentes no total</p>
                </div>
-               <div className="bg-[#10B981] p-6 rounded-[2.5rem] shadow-xl shadow-emerald-100 text-white flex flex-col justify-between active:scale-95 transition-all" onClick={() => setView('dashboard')}>
-                  <p className="text-[10px] font-black opacity-70 uppercase tracking-widest">Desempenho</p>
-                  <div className="flex justify-between items-end">
-                    <p className="text-xl font-black leading-none italic">GLOBAL</p>
-                    <span className="text-3xl">🚀</span>
+               <div className="bg-indigo-600 p-6 rounded-[2.5rem] shadow-xl text-white flex flex-col justify-between active:scale-95 transition-all" onClick={() => setView('dashboard')}>
+                  <p className="text-[10px] font-black opacity-70 uppercase tracking-widest">Painel Geral</p>
+                  <div className="flex justify-between items-end mt-2">
+                    <p className="text-xl font-black leading-none">STATUS</p>
+                    <span className="text-2xl">🏨</span>
                   </div>
                </div>
             </div>
 
             <section className="space-y-4">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-4 px-2">
                 <h2 className="text-xs font-black text-slate-800 uppercase tracking-[0.2em] flex items-center gap-2">
                   <span className="w-1.5 h-6 bg-indigo-600 rounded-full"></span>
-                  Suas Tarefas
+                  Minhas Atribuições
                 </h2>
-                <span className="text-[10px] font-black bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full">{tasks.filter(t => t.employee === currentUser.name && t.status !== 'concluido').length} PENDENTES</span>
+                <span className="text-[10px] font-black bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full">{tasks.filter(t => t.employee === currentUser.name && t.status !== 'concluido').length} PARA MIM</span>
               </div>
               
               {tasks.filter(t => t.employee === currentUser.name && t.status !== 'concluido').length === 0 ? (
                 <div className="bg-white border border-dashed border-slate-200 p-12 rounded-[3rem] text-center">
                   <span className="text-5xl block mb-4">✨</span>
-                  <p className="text-slate-400 font-black text-sm uppercase tracking-widest">Nada pendente agora</p>
-                  <p className="text-slate-300 text-xs mt-2 font-bold italic">Bom trabalho!</p>
+                  <p className="text-slate-400 font-black text-sm uppercase tracking-widest">Tudo em ordem!</p>
+                  <p className="text-slate-300 text-xs mt-2 font-bold italic">Nenhuma tarefa pendente para você.</p>
                 </div>
               ) : (
                 tasks.filter(t => t.employee === currentUser.name && t.status !== 'concluido').map(t => (
@@ -312,7 +311,7 @@ const App: React.FC = () => {
                 {messages.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center text-slate-300">
                     <span className="text-4xl mb-4">🏝️</span>
-                    <p className="font-black text-[10px] uppercase tracking-widest">Nenhuma mensagem</p>
+                    <p className="font-black text-[10px] uppercase tracking-widest">Nenhuma mensagem ainda</p>
                   </div>
                 ) : (
                   messages.map(m => (
@@ -339,7 +338,7 @@ const App: React.FC = () => {
                     value={chatInput} 
                     onChange={e => setChatInput(e.target.value)} 
                     onKeyDown={e => e.key === 'Enter' && handleSendMessage()} 
-                    placeholder="Escreva um aviso para a equipe..." 
+                    placeholder="Mande um recado..." 
                     className="flex-1 bg-transparent px-4 py-2 font-bold text-sm outline-none placeholder:text-slate-300" 
                   />
                   <button 
@@ -363,7 +362,7 @@ const App: React.FC = () => {
         )}
       </main>
 
-      <nav className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-slate-100 px-6 py-4 flex justify-between items-center z-[100] pb-8 shadow-[0_-10px_30px_rgba(0,0,0,0.03)]">
+      <nav className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-2xl border-t border-slate-100 px-6 py-4 flex justify-between items-center z-[100] pb-8 shadow-[0_-10px_30px_rgba(0,0,0,0.03)]">
         <button onClick={() => setView('home')} className={`p-3 flex flex-col items-center gap-1 transition-all rounded-2xl flex-1 ${view === 'home' ? 'text-indigo-600' : 'text-slate-300'}`}>
           <span className="text-xl">🏠</span>
           <span className="text-[7px] font-black uppercase tracking-widest">Início</span>
@@ -386,7 +385,7 @@ const App: React.FC = () => {
 
         <button onClick={() => setView('dashboard')} className={`p-3 flex flex-col items-center gap-1 transition-all rounded-2xl flex-1 ${view === 'dashboard' ? 'text-indigo-600' : 'text-slate-300'}`}>
           <span className="text-xl">📊</span>
-          <span className="text-[7px] font-black uppercase tracking-widest">Relatório</span>
+          <span className="text-[7px] font-black uppercase tracking-widest">Quadro</span>
         </button>
       </nav>
 
@@ -394,7 +393,11 @@ const App: React.FC = () => {
         <ChecklistModal 
           task={activeTask} 
           onClose={() => setShowChecklist(false)} 
-          onUpdate={() => loadTasks()} 
+          onUpdate={async (updatedTask) => {
+             // Sincroniza checklist parcial
+             await supabase.from('tasks').update({ checklist: updatedTask.checklist }).eq('id', updatedTask.id);
+             loadTasks();
+          }} 
           onComplete={handleCompleteTask} 
         />
       )}
