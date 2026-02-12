@@ -1,7 +1,7 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Task, User, TaskStatus, TaskType } from './types.ts';
-import { EMPLOYEES } from './constants.ts';
+import { EMPLOYEES, MOTIVATIONAL_QUOTES } from './constants.ts';
 import { TaskCard } from './components/TaskCard.tsx';
 import { ChecklistModal } from './components/ChecklistModal.tsx';
 import { Dashboard } from './components/Dashboard.tsx';
@@ -19,6 +19,21 @@ const App: React.FC = () => {
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Seleciona frase do dia baseada na data
+  const dailyQuote = useMemo(() => {
+    const day = new Date().getDate();
+    return MOTIVATIONAL_QUOTES[day % MOTIVATIONAL_QUOTES.length];
+  }, []);
+
+  // Login Persistente: Checa se há usuário salvo
+  useEffect(() => {
+    const savedPin = localStorage.getItem('maua_hub_session');
+    if (savedPin) {
+      const user = EMPLOYEES.find(u => u.pin === savedPin);
+      if (user) setCurrentUser(user);
+    }
+  }, []);
+
   const loadTasks = async () => {
     if (!isSupabaseConfigured) {
       setLoading(false);
@@ -32,9 +47,17 @@ const App: React.FC = () => {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      setTasks(data || []);
+      
+      // Cache local para suporte offline básico
+      if (data) {
+        setTasks(data);
+        localStorage.setItem('maua_tasks_cache', JSON.stringify(data));
+      }
     } catch (error: any) {
       console.error('Erro ao carregar tarefas:', error);
+      // Fallback para cache se estiver offline
+      const cached = localStorage.getItem('maua_tasks_cache');
+      if (cached) setTasks(JSON.parse(cached));
     } finally {
       setLoading(false);
     }
@@ -58,10 +81,18 @@ const App: React.FC = () => {
     const user = EMPLOYEES.find(u => u.pin === pin);
     if (user) {
       setCurrentUser(user);
+      localStorage.setItem('maua_hub_session', pin); // Salva a sessão
       setPin('');
     } else {
       alert('PIN incorreto!');
       setPin('');
+    }
+  };
+
+  const handleLogout = () => {
+    if (confirm('Deseja realmente sair? Você precisará do PIN para entrar novamente.')) {
+      localStorage.removeItem('maua_hub_session');
+      setCurrentUser(null);
     }
   };
 
@@ -117,7 +148,6 @@ const App: React.FC = () => {
     } else {
       await loadTasks();
       setShowAdmin(false);
-      // Notifica o funcionário via WhatsApp
       if (employee) {
         openAssignmentWhatsApp(name, employee, currentUser.name, notes);
       }
@@ -131,18 +161,7 @@ const App: React.FC = () => {
           <span className="text-4xl">⚠️</span>
         </div>
         <h1 className="text-2xl font-black mb-4">Configuração Necessária</h1>
-        <p className="text-slate-400 mb-8 max-w-md">
-          O sistema foi carregado, mas as chaves do Supabase não foram encontradas.
-        </p>
-        <div className="bg-slate-800 p-6 rounded-2xl text-left w-full max-w-md border border-slate-700">
-          <p className="text-xs font-bold text-indigo-400 uppercase mb-4">Ação necessária no Vercel:</p>
-          <ol className="text-sm space-y-3 text-slate-300">
-            <li>1. Vá em <b>Settings &gt; Environment Variables</b></li>
-            <li>2. Adicione <b>VITE_SUPABASE_URL</b></li>
-            <li>3. Adicione <b>VITE_SUPABASE_ANON_KEY</b></li>
-            <li>4. Realize um novo <b>Deploy</b></li>
-          </ol>
-        </div>
+        <p className="text-slate-400 mb-8 max-w-md">As chaves do Supabase não foram encontradas.</p>
       </div>
     );
   }
@@ -155,12 +174,14 @@ const App: React.FC = () => {
             <span className="text-4xl">🏨</span>
           </div>
           <h1 className="text-4xl font-black mb-2 tracking-tight">Hostel Mauá</h1>
-          <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Gestão Operacional</p>
+          <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Gestão Operacional</p>
         </div>
         <div className="w-full max-w-sm bg-white rounded-3xl p-8 shadow-2xl text-slate-800">
           <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Acesso com PIN</label>
           <input 
             type="password"
+            inputMode="numeric"
+            pattern="[0-9]*"
             value={pin}
             onChange={(e) => setPin(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
@@ -168,7 +189,7 @@ const App: React.FC = () => {
             maxLength={4}
             autoFocus
           />
-          <button onClick={handleLogin} className="w-full py-5 bg-indigo-600 text-white font-black rounded-2xl shadow-lg active:scale-95 transition-transform">ENTRAR</button>
+          <button onClick={handleLogin} className="w-full py-5 bg-indigo-600 text-white font-black rounded-2xl shadow-lg active:scale-95 transition-transform">ENTRAR NO HUB</button>
         </div>
       </div>
     );
@@ -181,62 +202,64 @@ const App: React.FC = () => {
   const todayStr = new Date().toISOString().split('T')[0];
   const isAdminOrManager = currentUser.role === 'gerente' || currentUser.role === 'criador';
   
-  // Lógica de separação
   const inProgressTasks = tasks.filter(t => t.status === 'andamento');
   const pendingTasks = tasks.filter(t => t.status === 'pendente');
   const completedToday = tasks.filter(t => t.status === 'concluido' && t.completed_at?.startsWith(todayStr));
-
-  // Filtro específico para o que o usuário logado deve FAZER
   const myActionableTasks = tasks.filter(t => t.employee === currentUser.name && t.status !== 'concluido');
-  
-  // Filtro para o que o gestor deve MONITORAR
-  const myManagementTasks = tasks.filter(t => 
-    (isAdminOrManager && t.status !== 'concluido') || 
-    (t.assigned_by === currentUser.name && t.status !== 'concluido')
-  );
+  const myManagementTasks = tasks.filter(t => (isAdminOrManager && t.status !== 'concluido'));
 
   return (
     <div className="min-h-screen pb-32 bg-slate-50/50">
       <header className="bg-white p-6 sticky top-0 z-30 border-b border-slate-100 shadow-sm flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-black text-slate-800 tracking-tight">MAUÁ HUB</h1>
-          <p className="text-[10px] font-bold text-indigo-500 uppercase">
-            {currentUser.role.toUpperCase()} • {currentUser.name}
+          <h1 className="text-xl font-black text-slate-800 tracking-tight leading-none mb-1">MAUÁ HUB</h1>
+          <p className="text-[10px] font-bold text-indigo-500 uppercase flex items-center gap-1">
+            <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+            {currentUser.name} ({currentUser.role})
           </p>
         </div>
-        <button onClick={() => setCurrentUser(null)} className="p-3 bg-slate-50 rounded-xl text-slate-400 active:bg-slate-100">🚪</button>
+        <button onClick={handleLogout} className="p-3 bg-slate-50 rounded-xl text-slate-400 active:bg-red-50 active:text-red-500 transition-colors">🚪</button>
       </header>
 
-      <main className="max-w-2xl mx-auto p-4 space-y-8">
+      <main className="max-w-2xl mx-auto p-4 space-y-6">
+        {/* Banner Motivacional */}
+        <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 p-6 rounded-3xl shadow-xl shadow-indigo-200 text-white relative overflow-hidden">
+          <div className="relative z-10">
+            <p className="text-[10px] font-black uppercase opacity-60 mb-2 tracking-[0.2em]">Mensagem do Dia</p>
+            <p className="text-lg font-extrabold leading-tight italic">"{dailyQuote}"</p>
+          </div>
+          <div className="absolute -right-4 -bottom-4 text-7xl opacity-10 rotate-12">✨</div>
+        </div>
+
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20">
-            <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-            <p className="text-slate-400 font-bold">Sincronizando...</p>
+            <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+            <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">Sincronizando Dados...</p>
           </div>
         ) : (
           <>
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
-                <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Status Global</p>
-                <p className="text-3xl font-black text-indigo-600">{completedToday.length} ✅</p>
+                <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Seu Progresso</p>
+                <p className="text-3xl font-black text-indigo-600">{tasks.filter(t => t.employee === currentUser.name && t.status === 'concluido' && t.completed_at?.startsWith(todayStr)).length} <span className="text-lg text-slate-300">/ {completedToday.length} total</span></p>
               </div>
-              <div className="bg-indigo-600 p-4 rounded-2xl shadow-lg shadow-indigo-100 text-white cursor-pointer active:scale-95 transition-transform flex flex-col justify-between" onClick={() => setView('dashboard')}>
-                <p className="text-[10px] font-black opacity-60 uppercase">Métricas</p>
+              <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm cursor-pointer active:scale-95 transition-transform flex flex-col justify-between" onClick={() => setView('dashboard')}>
+                <p className="text-[10px] font-black text-slate-400 uppercase">Analítica</p>
                 <div className="flex justify-between items-end">
-                  <p className="text-xl font-black">Dashboard</p>
-                  <span className="text-xl">📈</span>
+                  <p className="text-xl font-black text-slate-800">Métricas</p>
+                  <span className="text-xl">📊</span>
                 </div>
               </div>
             </div>
 
-            {/* SEÇÃO: MINHAS TAREFAS */}
+            {/* MINHAS TAREFAS - Prioridade Máxima */}
             {myActionableTasks.length > 0 && (
-              <section>
+              <section className="bg-indigo-50/30 p-4 rounded-3xl border border-indigo-100">
                 <div className="flex items-center gap-2 mb-4">
                   <span className="w-2 h-6 bg-indigo-500 rounded-full"></span>
-                  <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest">👷 Minhas Tarefas</h2>
+                  <h2 className="text-sm font-black text-indigo-900 uppercase tracking-widest">Suas Próximas Atividades</h2>
                 </div>
-                <div className="space-y-1">
+                <div className="space-y-2">
                   {myActionableTasks.map(task => (
                     <TaskCard key={task.id} task={task} onStart={handleStartTask} onFinish={() => { setActiveTask(task); setShowChecklist(true); }} currentUser={currentUser.name} />
                   ))}
@@ -244,18 +267,21 @@ const App: React.FC = () => {
               </section>
             )}
 
-            {/* SEÇÃO: GESTÃO EM TEMPO REAL */}
+            {/* MONITORAMENTO - Gestores */}
             {isAdminOrManager && (
               <section>
                 <div className="flex items-center gap-2 mb-4">
                   <span className="w-2 h-6 bg-amber-500 rounded-full"></span>
-                  <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest">🎯 Monitoramento Hostel</h2>
+                  <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest">Monitoramento Geral</h2>
                 </div>
                 
                 <div className="space-y-6">
                   {inProgressTasks.length > 0 && (
                     <div className="space-y-3">
-                      <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest ml-1">⚡ Em Execução Agora</p>
+                      <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest ml-1 flex items-center gap-2">
+                        <span className="w-2 h-2 bg-amber-500 rounded-full animate-ping"></span>
+                        Em Execução
+                      </p>
                       {inProgressTasks.map(task => (
                         <TaskCard key={task.id} task={task} onStart={handleStartTask} onFinish={() => { setActiveTask(task); setShowChecklist(true); }} currentUser={currentUser.name} />
                       ))}
@@ -273,20 +299,19 @@ const App: React.FC = () => {
 
                   {myManagementTasks.length === 0 && (
                     <div className="text-center py-12 bg-white rounded-3xl border-2 border-dashed border-slate-200">
-                      <p className="text-slate-400 font-bold">Nenhuma tarefa ativa no momento. 🎉</p>
+                      <p className="text-slate-400 font-bold">Nenhuma tarefa ativa. Bom trabalho! 🎉</p>
                     </div>
                   )}
                 </div>
               </section>
             )}
 
-            {/* SEÇÃO: CONCLUÍDOS HOJE (Visível para todos) */}
             {completedToday.length > 0 && (
-              <section className="pt-4 opacity-90">
+              <section className="pt-4 opacity-70 grayscale-[0.5]">
                 <div className="flex items-center gap-2 mb-4">
                   <span className="w-2 h-6 bg-emerald-500 rounded-full"></span>
                   <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
-                    ✅ Concluídos Hoje
+                    Concluídos Hoje
                     <span className="bg-emerald-100 text-emerald-600 text-[10px] px-2 py-0.5 rounded-full">{completedToday.length}</span>
                   </h2>
                 </div>
@@ -298,12 +323,11 @@ const App: React.FC = () => {
               </section>
             )}
 
-            {/* ESTADO VAZIO PARA FUNCIONÁRIOS */}
-            {!isAdminOrManager && myActionableTasks.length === 0 && completedToday.length === 0 && (
-              <div className="text-center py-20 bg-white rounded-3xl border-2 border-dashed border-slate-200">
-                 <div className="text-5xl mb-4">☕</div>
-                 <h2 className="text-xl font-black text-slate-800">Tudo limpo por aqui!</h2>
-                 <p className="text-slate-400 font-medium">Aproveite o seu descanso ou aguarde novas ordens.</p>
+            {!isAdminOrManager && myActionableTasks.length === 0 && (
+              <div className="text-center py-20 bg-white rounded-3xl border border-slate-100 shadow-sm">
+                 <div className="text-6xl mb-4">🙌</div>
+                 <h2 className="text-xl font-black text-slate-800">Missão Cumprida!</h2>
+                 <p className="text-slate-400 font-medium max-w-xs mx-auto">Você não tem tarefas pendentes agora. Deus abençoe seu descanso!</p>
               </div>
             )}
           </>
@@ -311,11 +335,11 @@ const App: React.FC = () => {
       </main>
 
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 p-4 flex justify-around items-center z-40 pb-8">
-        <button onClick={() => setView('home')} className={`p-2 text-2xl transition-all ${view === 'home' ? 'text-indigo-600 scale-110' : 'text-slate-400'}`}>🏠</button>
+        <button onClick={() => setView('home')} className={`p-4 text-2xl transition-all ${view === 'home' ? 'bg-indigo-50 text-indigo-600 rounded-2xl' : 'text-slate-300'}`}>🏠</button>
         {isAdminOrManager && (
-          <button onClick={() => setShowAdmin(true)} className="w-14 h-14 bg-indigo-600 text-white rounded-2xl shadow-lg flex items-center justify-center -translate-y-6 active:scale-90 transition-transform text-2xl font-bold border-4 border-white">＋</button>
+          <button onClick={() => setShowAdmin(true)} className="w-16 h-16 bg-indigo-600 text-white rounded-full shadow-2xl flex items-center justify-center -translate-y-8 active:scale-90 transition-all text-3xl font-bold border-8 border-slate-50">＋</button>
         )}
-        <button onClick={() => setView('dashboard')} className={`p-2 text-2xl transition-all ${view === 'dashboard' ? 'text-indigo-600 scale-110' : 'text-slate-400'}`}>📊</button>
+        <button onClick={() => setView('dashboard')} className={`p-4 text-2xl transition-all ${view === 'dashboard' ? 'bg-indigo-50 text-indigo-600 rounded-2xl' : 'text-slate-300'}`}>📊</button>
       </nav>
 
       {showChecklist && activeTask && (
