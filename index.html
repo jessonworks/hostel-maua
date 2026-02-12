@@ -3,8 +3,17 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Hostel Mauá - Limpeza</title>
+    
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#4f46e5">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Mauá Hub">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/11496/11496730.png">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,6 +24,7 @@
             background-color: #f8fafc;
             margin: 0;
             padding: 0;
+            -webkit-tap-highlight-color: transparent;
         }
         .touch-target {
             min-height: 48px;
@@ -35,6 +45,13 @@
             align-items: center;
             justify-content: center;
             text-align: center;
+        }
+        /* Ajuste para notch de iPhones */
+        header {
+            padding-top: env(safe-area-inset-top, 1.5rem);
+        }
+        nav {
+            padding-bottom: env(safe-area-inset-bottom, 2rem);
         }
     </style>
 <script type="importmap">
@@ -58,6 +75,18 @@
             <button onclick="location.reload()" style="margin-top: 2rem; width: 100%; padding: 1rem; background: #4f46e5; border: none; color: white; border-radius: 0.75rem; font-weight: bold; cursor: pointer;">Recarregar Sistema</button>
         </div>
     </div>
+    
     <script type="module" src="/index.tsx"></script>
+
+    <!-- Registro do Service Worker -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/service-worker.js')
+            .then(reg => console.log('🚀 Service Worker registrado!', reg))
+            .catch(err => console.log('❌ Falha ao registrar Service Worker', err));
+        });
+      }
+    </script>
 </body>
 </html>
