@@ -113,7 +113,7 @@ const App: React.FC = () => {
         setChatInput('');
         loadMessages();
       } else {
-        alert("Erro ao enviar mensagem: " + error.message);
+        alert("Erro ao enviar: " + error.message);
       }
     } catch (e) {
       console.error(e);
@@ -193,7 +193,7 @@ const App: React.FC = () => {
   const totalMyTasks = myTodayTasks.length;
 
   return (
-    <div className="min-h-screen pb-36 bg-[#F8FAFC]">
+    <div className={`min-h-screen bg-[#F8FAFC] ${view === 'chat' ? 'h-screen flex flex-col pb-24 overflow-hidden' : 'pb-36'}`}>
       {/* Toast Notification */}
       {newNotification && (
         <div className="fixed top-6 left-4 right-4 z-[100] animate-bounce">
@@ -207,54 +207,69 @@ const App: React.FC = () => {
         </div>
       )}
 
-      <header className="bg-white p-6 sticky top-0 z-30 border-b border-slate-100 shadow-sm">
-        <div className="flex justify-between items-center mb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white text-xl shadow-lg">M</div>
-            <div>
-              <h1 className="text-lg font-black text-slate-900 leading-none">MAUÁ HUB</h1>
-              <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mt-1">
-                {currentUser.name} • <span className="text-slate-400">{currentUser.role}</span>
-              </p>
+      {/* Header Compacto condicional */}
+      {view === 'home' ? (
+        <header className="bg-white p-6 sticky top-0 z-30 border-b border-slate-100 shadow-sm animate-in fade-in duration-500">
+          <div className="flex justify-between items-center mb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white text-xl shadow-lg">M</div>
+              <div>
+                <h1 className="text-lg font-black text-slate-900 leading-none">MAUÁ HUB</h1>
+                <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mt-1">
+                  {currentUser.name} • <span className="text-slate-400">{currentUser.role === 'criador' ? 'ADMIN' : currentUser.role.toUpperCase()}</span>
+                </p>
+              </div>
             </div>
+            <button onClick={handleLogout} className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 active:bg-red-50 active:text-red-500 transition-all border border-slate-100">🚪</button>
           </div>
-          <button onClick={handleLogout} className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 active:bg-red-50 active:text-red-500 transition-all border border-slate-100">🚪</button>
-        </div>
-        <div className="flex items-center justify-between bg-slate-50/80 p-3 rounded-2xl border border-slate-100">
-           <div className="flex items-center gap-2">
-             <span className="text-sm">🗓️</span>
-             <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{fullDate}</p>
-           </div>
-           <div className="flex items-center gap-1">
-             <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-             <span className="text-[9px] font-black text-emerald-600 uppercase">Sistema Online</span>
-           </div>
-        </div>
-      </header>
+          <div className="flex items-center justify-between bg-slate-50/80 p-3 rounded-2xl border border-slate-100">
+             <div className="flex items-center gap-2">
+               <span className="text-sm">🗓️</span>
+               <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{fullDate}</p>
+             </div>
+             <div className="flex items-center gap-1">
+               <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+               <span className="text-[9px] font-black text-emerald-600 uppercase">Online</span>
+             </div>
+          </div>
+        </header>
+      ) : (
+        /* Header minimalista para Chat/Dash */
+        <header className="bg-white px-6 py-4 border-b border-slate-100 flex items-center justify-between sticky top-0 z-30">
+          <div className="flex items-center gap-3">
+             <button onClick={() => setView('home')} className="w-8 h-8 flex items-center justify-center bg-slate-100 rounded-lg text-slate-500">🏠</button>
+             <h2 className="font-black text-slate-800 uppercase text-[10px] tracking-widest">
+                {view === 'chat' ? 'Mural da Equipe' : 'Métricas & Relatório'}
+             </h2>
+          </div>
+          <div className="w-8 h-8 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center text-[10px] font-black">
+             {currentUser.name[0]}
+          </div>
+        </header>
+      )}
 
-      <main className="max-w-2xl mx-auto p-4 space-y-6">
+      <main className={`max-w-2xl mx-auto p-4 ${view === 'chat' ? 'flex-1 overflow-hidden p-0' : 'space-y-6'}`}>
         {view === 'home' && (
-          <>
+          <div className="animate-in slide-in-from-bottom-4 duration-500 space-y-6">
             <div className="bg-gradient-to-br from-[#4F46E5] to-[#7C3AED] p-8 rounded-[3rem] shadow-2xl text-white relative overflow-hidden group">
                <div className="relative z-10">
                  <div className="flex items-center gap-2 mb-4">
                    <span className="bg-white/20 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.2em] backdrop-blur-sm">Café com Fé</span>
                  </div>
-                 <p className="text-2xl font-black italic leading-tight tracking-tight drop-shadow-sm">"{MOTIVATIONAL_QUOTES[new Date().getDate() % MOTIVATIONAL_QUOTES.length]}"</p>
+                 <p className="text-xl font-black italic leading-tight tracking-tight drop-shadow-sm">"{MOTIVATIONAL_QUOTES[new Date().getDate() % MOTIVATIONAL_QUOTES.length]}"</p>
                </div>
                <div className="absolute -right-8 -bottom-8 text-[12rem] opacity-10 rotate-12 pointer-events-none transition-transform group-hover:scale-110 duration-700">🙏</div>
-               <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
                <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm relative overflow-hidden">
-                  <p className="text-[10px] font-black text-slate-400 uppercase mb-3 tracking-widest">Sua Meta Hoje</p>
+                  <p className="text-[10px] font-black text-slate-400 uppercase mb-3 tracking-widest">Minha Meta</p>
                   <div className="flex items-end gap-2">
                     <p className="text-4xl font-black text-indigo-600">{myCompletedToday}</p>
                     <p className="text-lg font-black text-slate-300 mb-1">/ {totalMyTasks}</p>
                   </div>
                   <div className="w-full h-2.5 bg-slate-100 rounded-full mt-4 overflow-hidden shadow-inner">
-                    <div className="h-full bg-indigo-500 transition-all duration-1000 shadow-[0_0_10px_rgba(79,70,229,0.5)]" style={{ width: `${totalMyTasks > 0 ? (myCompletedToday / totalMyTasks) * 100 : 0}%` }}></div>
+                    <div className="h-full bg-indigo-500 transition-all duration-1000" style={{ width: `${totalMyTasks > 0 ? (myCompletedToday / totalMyTasks) * 100 : 0}%` }}></div>
                   </div>
                   <div className="absolute right-4 top-4 text-2xl opacity-20">🎯</div>
                </div>
@@ -271,65 +286,41 @@ const App: React.FC = () => {
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xs font-black text-slate-800 uppercase tracking-[0.2em] flex items-center gap-2">
                   <span className="w-1.5 h-6 bg-indigo-600 rounded-full"></span>
-                  Minhas Atividades
+                  Suas Tarefas
                 </h2>
-                <span className="text-[10px] font-black bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full">{tasks.filter(t => t.employee === currentUser.name && t.status !== 'concluido').length} ATIVAS</span>
+                <span className="text-[10px] font-black bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full">{tasks.filter(t => t.employee === currentUser.name && t.status !== 'concluido').length} PENDENTES</span>
               </div>
               
               {tasks.filter(t => t.employee === currentUser.name && t.status !== 'concluido').length === 0 ? (
                 <div className="bg-white border border-dashed border-slate-200 p-12 rounded-[3rem] text-center">
                   <span className="text-5xl block mb-4">✨</span>
-                  <p className="text-slate-400 font-black text-sm uppercase tracking-widest">Sem tarefas pendentes</p>
-                  <p className="text-slate-300 text-xs mt-2 font-bold italic">Aproveite para organizar seu material!</p>
+                  <p className="text-slate-400 font-black text-sm uppercase tracking-widest">Nada pendente agora</p>
+                  <p className="text-slate-300 text-xs mt-2 font-bold italic">Bom trabalho!</p>
                 </div>
               ) : (
                 tasks.filter(t => t.employee === currentUser.name && t.status !== 'concluido').map(t => (
                   <TaskCard key={t.id} task={t} onStart={handleStartTask} onFinish={() => { setActiveTask(t); setShowChecklist(true); }} currentUser={currentUser.name} />
                 ))
               )}
-
-              {isAdmin && tasks.filter(t => t.employee !== currentUser.name && t.status !== 'concluido').length > 0 && (
-                <div className="mt-12 space-y-6">
-                  <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
-                    <span className="text-xl">👀</span>
-                    <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Painel de Monitoramento</h2>
-                  </div>
-                  {tasks.filter(t => t.employee !== currentUser.name && t.status !== 'concluido').map(t => (
-                    <TaskCard key={t.id} task={t} onStart={handleStartTask} onFinish={() => {}} currentUser={currentUser.name} />
-                  ))}
-                </div>
-              )}
             </section>
-          </>
+          </div>
         )}
 
         {view === 'chat' && (
-          <div className="bg-white rounded-[3rem] shadow-2xl flex flex-col h-[75vh] border border-slate-100 overflow-hidden relative">
-             <div className="p-6 bg-slate-50/50 border-b flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-indigo-100 rounded-2xl flex items-center justify-center text-xl shadow-inner">💬</div>
-                  <div>
-                    <p className="font-black text-slate-800 uppercase text-[10px] tracking-[0.2em]">Mural da Equipe</p>
-                    <p className="text-[9px] font-bold text-emerald-500 uppercase flex items-center gap-1 mt-0.5">
-                      <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
-                      Tempo Real Ativo
-                    </p>
-                  </div>
-                </div>
-             </div>
-             <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-white">
+          <div className="h-full flex flex-col bg-white animate-in slide-in-from-right-4 duration-500">
+             <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-10">
                 {messages.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center text-slate-300">
                     <span className="text-4xl mb-4">🏝️</span>
-                    <p className="font-black text-[10px] uppercase tracking-widest">Nenhuma conversa ainda</p>
+                    <p className="font-black text-[10px] uppercase tracking-widest">Nenhuma mensagem</p>
                   </div>
                 ) : (
                   messages.map(m => (
-                    <div key={m.id} className={`flex flex-col ${m.user_name === currentUser.name ? 'items-end' : 'items-start'} animate-in slide-in-from-bottom-2 duration-300`}>
-                      <span className="text-[9px] font-black text-slate-400 uppercase mb-2 ml-2 mr-2">
+                    <div key={m.id} className={`flex flex-col ${m.user_name === currentUser.name ? 'items-end' : 'items-start'} animate-in fade-in slide-in-from-bottom-2`}>
+                      <span className="text-[8px] font-black text-slate-400 uppercase mb-1 ml-1 mr-1">
                         {m.user_name} • {new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
                       </span>
-                      <div className={`p-4 rounded-[1.8rem] max-w-[85%] text-sm font-bold shadow-sm leading-relaxed ${
+                      <div className={`px-4 py-3 rounded-2xl max-w-[85%] text-sm font-bold shadow-sm leading-relaxed ${
                         m.user_name === currentUser.name 
                           ? 'bg-indigo-600 text-white rounded-tr-none' 
                           : 'bg-slate-100 text-slate-700 rounded-tl-none'
@@ -341,21 +332,21 @@ const App: React.FC = () => {
                 )}
                 <div ref={chatEndRef} />
              </div>
-             <div className="p-6 bg-white border-t border-slate-100">
-                <div className="flex gap-3 bg-slate-50 p-2 rounded-[2rem] border border-slate-100 focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-100 transition-all">
+             
+             <div className="p-4 bg-white border-t border-slate-100 sticky bottom-0 z-40">
+                <div className="flex gap-2 bg-slate-50 p-1.5 rounded-full border border-slate-100 focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-50 transition-all">
                   <input 
                     value={chatInput} 
                     onChange={e => setChatInput(e.target.value)} 
                     onKeyDown={e => e.key === 'Enter' && handleSendMessage()} 
-                    placeholder="Mande um aviso..." 
-                    disabled={sendingMessage}
-                    className="flex-1 bg-transparent px-4 py-3 rounded-full font-bold text-sm outline-none placeholder:text-slate-300" 
+                    placeholder="Escreva um aviso para a equipe..." 
+                    className="flex-1 bg-transparent px-4 py-2 font-bold text-sm outline-none placeholder:text-slate-300" 
                   />
                   <button 
                     onClick={handleSendMessage} 
                     disabled={sendingMessage || !chatInput.trim()}
-                    className={`w-12 h-12 flex items-center justify-center rounded-full transition-all active:scale-90 shadow-lg ${
-                      sendingMessage || !chatInput.trim() ? 'bg-slate-200 text-slate-400' : 'bg-indigo-600 text-white shadow-indigo-200'
+                    className={`w-10 h-10 flex items-center justify-center rounded-full transition-all active:scale-90 shadow-lg ${
+                      sendingMessage || !chatInput.trim() ? 'bg-slate-200 text-slate-400' : 'bg-indigo-600 text-white'
                     }`}
                   >
                     {sendingMessage ? '...' : '🚀'}
@@ -365,33 +356,37 @@ const App: React.FC = () => {
           </div>
         )}
 
-        {view === 'dashboard' && <Dashboard tasks={tasks} onBack={() => setView('home')} userRole={currentUser.role} currentUser={currentUser.name} />}
+        {view === 'dashboard' && (
+          <div className="animate-in slide-in-from-left-4 duration-500">
+            <Dashboard tasks={tasks} onBack={() => setView('home')} userRole={currentUser.role} currentUser={currentUser.name} />
+          </div>
+        )}
       </main>
 
-      <nav className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-2xl border-t border-slate-100 p-5 flex justify-around items-center z-40 pb-10 shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
-        <button onClick={() => setView('home')} className={`p-4 flex flex-col items-center gap-1.5 transition-all rounded-3xl ${view === 'home' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-300'}`}>
-          <span className="text-2xl">🏠</span>
-          <span className="text-[8px] font-black uppercase tracking-[0.2em]">Home</span>
+      <nav className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-slate-100 px-6 py-4 flex justify-between items-center z-[100] pb-8 shadow-[0_-10px_30px_rgba(0,0,0,0.03)]">
+        <button onClick={() => setView('home')} className={`p-3 flex flex-col items-center gap-1 transition-all rounded-2xl flex-1 ${view === 'home' ? 'text-indigo-600' : 'text-slate-300'}`}>
+          <span className="text-xl">🏠</span>
+          <span className="text-[7px] font-black uppercase tracking-widest">Início</span>
         </button>
         
         {isAdmin && (
           <button 
             onClick={() => setShowAdmin(true)} 
-            className="w-18 h-18 bg-indigo-600 text-white rounded-full shadow-[0_10px_30px_rgba(79,70,229,0.4)] flex items-center justify-center -translate-y-10 active:scale-90 transition-all text-3xl font-bold border-[6px] border-[#F8FAFC]"
+            className="w-14 h-14 bg-indigo-600 text-white rounded-2xl shadow-xl shadow-indigo-200 flex items-center justify-center -translate-y-8 active:scale-90 transition-all text-2xl font-bold border-4 border-white"
           >
             ＋
           </button>
         )}
 
-        <button onClick={() => setView('chat')} className={`p-4 flex flex-col items-center gap-1.5 transition-all rounded-3xl relative ${view === 'chat' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-300'}`}>
-          <span className="text-2xl">💬</span>
-          <span className="text-[8px] font-black uppercase tracking-[0.2em]">Mural</span>
-          <span className="absolute top-3 right-3 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
+        <button onClick={() => setView('chat')} className={`p-3 flex flex-col items-center gap-1 transition-all rounded-2xl flex-1 relative ${view === 'chat' ? 'text-indigo-600' : 'text-slate-300'}`}>
+          <span className="text-xl">💬</span>
+          <span className="text-[7px] font-black uppercase tracking-widest">Mural</span>
+          <span className="absolute top-2 right-1/4 w-2 h-2 bg-indigo-500 rounded-full border-2 border-white"></span>
         </button>
 
-        <button onClick={() => setView('dashboard')} className={`p-4 flex flex-col items-center gap-1.5 transition-all rounded-3xl ${view === 'dashboard' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-300'}`}>
-          <span className="text-2xl">📊</span>
-          <span className="text-[8px] font-black uppercase tracking-[0.2em]">Stats</span>
+        <button onClick={() => setView('dashboard')} className={`p-3 flex flex-col items-center gap-1 transition-all rounded-2xl flex-1 ${view === 'dashboard' ? 'text-indigo-600' : 'text-slate-300'}`}>
+          <span className="text-xl">📊</span>
+          <span className="text-[7px] font-black uppercase tracking-widest">Relatório</span>
         </button>
       </nav>
 
